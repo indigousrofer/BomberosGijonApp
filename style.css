@@ -1,0 +1,787 @@
+/* Estilos Generales para Usabilidad */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+header {
+    background-color: #AA1915;
+    color: white;
+    padding: 0 15px;
+    display: flex;
+    justify-content: space-between; /* Empuja los iconos a los bordes */
+    align-items: center;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 1001;
+}
+
+/* Forzamos que los laterales midan lo mismo para que el centro sea real */
+.header-left, #header-action-icon {
+    width: 50px; 
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+#header-action-icon {
+    justify-content: flex-end;
+}
+
+header h1 {
+    flex-grow: 1; /* Ocupa todo el espacio entre iconos */
+    text-align: center;
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    /* --- SOMBRA AL TEXTO --- */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4); /* Sombra suave en negro con 40% de opacidad */
+    
+    /* Evita que se corte y pone puntos suspensivos si es muy largo */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#back-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-right: 10px;
+    height: 35px;
+    width: 35px;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Eliminamos transform: rotate(180deg) porque la imagen ya apunta a la izquierda */
+    transition: opacity 0.2s;
+}
+
+#back-icon-img {
+    width: 28px;
+    height: 28px;
+}
+
+#back-button:active {
+    opacity: 0.6;
+}
+
+h1 {
+    font-size: 1.5em;
+    margin: 0;
+}
+
+#app-content {
+    padding: 20px;
+}
+
+/* Estilos de Botones y Listas */
+.list-item, .view-button {
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+    font-size: 1.1em;
+}
+
+.list-item:hover, .view-button:hover, .hotspot:hover {
+    background-color: #ffe4e4;
+}
+
+/* Estilos Específicos para la Vista Ampliada del Vehículo (Hotspots) */
+#vehicle-view-container {
+    position: relative;
+    max-width: 100%;
+    margin: auto;
+    /* Usaremos la imagen como fondo o como etiqueta <img> */
+}
+
+#vehicle-view-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    border: 1px solid #999;
+}
+
+.hotspot {
+    position: absolute;
+    /* Mantenemos el área clicable transparente para no tapar la imagen */
+    background-color: rgba(28, 160, 236, 0.411); 
+    border: 2px dashed rgba(255, 255, 255, 0.6);
+	z-index: 999;
+    cursor: pointer;
+    
+    /* Configuración para centrar el contenido (el texto) */
+    display: flex;
+    justify-content: center; /* Centrado horizontal */
+    align-items: center; /* Centrado vertical */
+    text-align: center;
+
+    /* --- ANIMACIÓN DE PULSACIÓN --- */
+    animation: hotspot-pulse 1s infinite ease-in-out; /* 2 segundos, se repite infinito */
+
+}
+
+/* Estilo para el texto que va dentro del hotspot */
+.hotspot-label {
+    background-color: rgba(17, 46, 138, 0.9); /* Fondo rojo oscuro y opaco */
+    color: white; 
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-weight: bold;
+    line-height: 1.2;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
+    
+    /* Asegura que el texto no desborde y se mantenga en el centro */
+    max-width: 90%; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Estilos del Visor Modal */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 1000; 
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.9); /* Fondo negro opaco */
+    overflow: auto;
+}
+
+.modal-content {
+    margin: auto;
+    display: block;
+    max-width: 90%;
+    max-height: 80%;
+    margin-top: 50px;
+}
+
+.close-viewer {
+    position: absolute;
+    top: 20px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 60px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#modal-content img {
+    width: auto;           /* Permite que el ancho sea automático */
+    max-width: 95%;        /* Que no se salga de los lados */
+    height: auto;          /* Permite que el alto sea automático */
+    max-height: 85vh;      /* Que no se pase de la altura de la pantalla */
+    display: block;
+    margin: 50px auto;     /* Centra la imagen horizontalmente */
+    border: 3px solid white;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    
+    /* Esta es la clave: mantiene la proporción */
+    object-fit: contain; 
+}
+
+/* Si usas PDFs, el iframe sí suele necesitar medidas fijas */
+#modal-content iframe {
+    width: 90%;
+    height: 70vh; /* Un poco más bajo para que quepa el botón de cerrar arriba */
+    display: block;
+    margin: 40px auto;
+    background-color: black;
+    border: 2px solid #555;
+}
+
+/* Tarjetas de vehículos en el nivel 1 */
+.vehicle-card {
+    background: white;
+    border: none; 
+    border-radius: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    transition: transform 0.2s, background-color 0.2s;
+    
+    /* --- CAMBIO CLAVE: Disposición Horizontal --- */
+    display: flex;         /* Activa Flexbox */
+    align-items: center;   /* Alinea verticalmente la imagen y el texto */
+    gap: 15px;             /* Espacio entre la foto y el texto */
+    padding: 15px;         /* Añade padding dentro de la tarjeta */
+}
+
+.vehicle-card:active {
+    transform: scale(0.98);
+    background-color: #f9f9f9;
+}
+
+.vehicle-thumb {
+    width: 100px; /* Tamaño fijo para la miniatura */
+    height: 70px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    object-fit: contain; /* Asegura que la imagen se vea bien en el espacio fijo */
+    flex-shrink: 0; /* IMPEDIMOS que la imagen se reduzca si hay mucho texto */
+}
+
+.vehicle-info {
+    flex-grow: 1; /* Permite que el texto ocupe todo el espacio restante */
+}
+
+.vehicle-info h2 {
+    margin: 0;
+    font-size: 1.2em;
+    color: #AA1915;
+}
+
+.vehicle-info p {
+    margin: 5px 0 0 0;
+    font-size: 0.9em;
+    color: #555;
+}
+
+/* Opcional: Para que se vea bien en tabletas, podemos usar una cuadrícula */
+.grid-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.list-item .view-button {
+    font-size: 0.9em;
+    flex: 1;
+}
+
+.header-icon {
+    width: 30px;        /* Tamaño del icono en la cabecera */
+    height: 30px;
+    vertical-align: middle; /* Alinea el icono con el centro del texto */
+    margin-right: 10px;    /* Espacio entre el icono y el texto */
+    border-radius: 4px;    /* Un pequeño redondeado */
+}
+
+/* Contenedor de la tabla de inventario */
+.inventory-table {
+	margin-top: 10px; /* Un poco de aire entre el header y la tabla */
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.inventory-row {
+    display: flex;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.inventory-row:hover {
+    background-color: #f9f9f9;
+}
+
+.col-qty {
+    width: 40px;
+    padding: 15px;
+    font-weight: bold;
+    color: #7a1511;
+    text-align: center;
+    border-right: 2px solid #eee;
+}
+
+.col-name {
+    flex-grow: 1;
+    padding: 15px;
+    color: #000000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+
+/* Contenedor de descripción e imagen del material */
+.material-detail-container {
+    display: flex;
+    gap: 20px;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    align-items: flex-start;
+}
+
+.material-main-img {
+    width: 150px;           /* Ancho de la miniatura */
+    height: 150px;
+    object-fit: cover;      /* Mantiene la proporción sin deformar */
+    border-radius: 5px;
+    cursor: pointer;        /* Indica que se puede ampliar */
+    border: 1px solid #ddd;
+}
+
+.material-text {
+    flex: 1;                /* El texto ocupa el resto del espacio */
+}
+
+/* Ajuste para móviles: si la pantalla es estrecha, se pone uno debajo de otro */
+@media (max-width: 600px) {
+    .material-detail-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    .material-main-img {
+        width: 100%;
+        height: auto;
+    }
+}
+
+#header-action-icon {
+    cursor: default; /* Por defecto en la principal */
+    display: flex;
+    align-items: center;
+}
+
+.header-logo-active {
+    cursor: pointer !important;
+    transition: transform 0.2s;
+}
+
+.header-logo-active:active {
+    transform: scale(0.9); /* Efecto al pulsar */
+}
+
+#header-logo-img {
+    width: 35px;
+    height: 35px;
+    border-radius: 5px;
+    /*background: white;*/
+    margin: 0;
+    padding: 0;
+}
+
+.section-icon {
+    font-size: 2.5em;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fdfdfd;
+    border-radius: 12px;
+}
+
+/* Ajuste para que las tarjetas de sección resalten */
+.vehicle-card h2 {
+    font-size: 1.4em !important;
+}
+
+/* Contenedor del mapa My Maps */
+#map {
+    width: 100vw; /* Ancho total de la ventana */
+    height: calc(100vh - 70px); /* Altura total menos el header */
+    margin-top: -20px;   /* Compensa el padding superior de #app-content */
+    margin-left: -20px;  /* Compensa el padding izquierdo de #app-content */
+    position: relative;
+    z-index: 1;
+}
+
+/* Evitamos que aparezca una barra de scroll horizontal por los márgenes negativos */
+body {
+    overflow-x: hidden;
+}
+
+.leaflet-control-layers {
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    font-weight: bold;
+}
+
+.leaflet-control-layers-overlays label {
+    display: block;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+/* Reglas visuales para el calendario */
+/* --- Añadir/Sustituir estas reglas limpias al final --- */
+
+.calendar-view {
+    /* Eliminamos el min-height fijo */
+    height: auto; 
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 500px;
+    margin: 0 auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Eliminamos bordes sobrantes en la última fila */
+.tabla-calendario tr:last-child td {
+    border-bottom: none;
+}
+
+.calendar-header-compact, .calendar-nav {
+    max-width: 500px;    /* Mismo ancho que el calendario */
+    margin-left: auto;   /* Centrado horizontal */
+    margin-right: auto;
+}
+
+.tabla-calendario {
+    width: 100%;         /* Ocupa todo el contenedor de 500px */
+    max-width: 100%;     /* Eliminamos el max-width anterior de 400px */
+    margin: 0;           /* Quitamos márgenes porque ya los tiene el padre */
+    border-collapse: collapse;
+}
+
+.turno-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 5px;
+}
+
+.turno-btn-small {
+    flex: 1;
+    padding: 12px 0;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    font-size: 1em;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.calendar-nav {
+    display: flex; /* Activa el modo horizontal */
+    justify-content: space-between; /* Separa los botones a los extremos */
+    align-items: center; /* Alinea verticalmente los iconos y el texto */
+    background: white;
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 8px;
+}
+
+.calendar-nav h4 {
+    margin: 0;
+    font-size: 1.1em;
+    flex-grow: 1; /* Permite que el nombre del mes use el espacio central */
+    text-align: center;
+}
+
+.calendar-nav button {
+    background: #AA1915;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    font-size: 1.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0; /* Impide que los botones se deformen si el texto es largo */
+}
+
+/* La flecha izquierda se rota para apuntar atrás */
+.calendar-nav button:first-child {
+    transform: rotate(180deg);
+}
+
+/* style.css */
+.tabla-calendario td {
+    width: 14.28%;     /* 7 días */
+    height: 50px;      /* Altura fija para el cuadrado */
+    text-align: center;
+    border: 1px solid #f0f0f0;
+    font-size: 1.1em;
+    padding: 0 !important;   /* Forzamos que no haya espacio interno */
+    vertical-align: middle;
+    border-radius: 0 !important; /* Forzamos que sea cuadrado, eliminando el círculo */
+}
+
+.tabla-calendario td {
+    box-sizing: border-box; /* Asegura que el borde de 3px crezca hacia adentro */
+    width: 14.28%;
+    height: 50px;
+    text-align: center;
+    border: 1px solid #f0f0f0;
+    font-size: 1.1em;
+    padding: 0 !important;
+    vertical-align: middle;
+}
+
+/* Para que el número se vea bien centrado en el cuadrado de color */
+.tabla-calendario td[style*="background-color"] {
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.calendar-footer {
+    background: #f9f9f9;
+    padding: 15px;
+    border-top: 1px solid #eee;
+    font-size: 0.9em;
+}
+
+.hoy-badge {
+    background: white;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.hoy-badge span {
+    color: #AA1915;
+    font-weight: bold;
+}
+
+.leyenda-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #666;
+}
+
+.dot {
+    height: 12px;
+    width: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.resource-container {
+    width: 100%;
+    height: calc(100vh - 80px);
+    overflow: hidden;
+    position: relative;
+    background: #f4f4f4;
+}
+
+.resource-iframe {
+    width: 100%;
+    height: calc(100vh - 70px);
+    display: block;
+    border: none;
+}
+
+.fallback-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    text-align: center;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* Estilo específico para el contenido interno del Nivel 6 (Visor) */
+.resource-container-wrapper {
+    /* Forzamos que ocupe todo el ancho para centrar el contenido */
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    justify-content: center;
+}
+
+/* Aplicamos esta clase a las imágenes y videos en app.js */
+.centered-resource {
+    display: block;
+    margin-top: 10px;
+    max-width: 95%; /* Evita que el contenido toque los bordes */
+    height: auto;
+    border-radius: 8px;
+}
+
+/* Estilos específicos para el enlace de PDF (manual) */
+.list-item.manual-link {
+    display: flex; /* Permite centrar el contenido */
+    align-items: center; /* Centrado vertical del texto */
+    justify-content: flex-start; /* Alineación del icono y texto a la izquierda */
+    width: 100%; /* Ocupa el 100% del ancho del contenedor */
+    box-sizing: border-box; /* Asegura que el padding no desborde el ancho */
+    text-decoration: none; /* Quitamos el subrayado típico del enlace */
+    color: inherit; /* Hereda el color de texto */
+    padding: 15px; /* Mantiene el padding de las otras tarjetas */
+    border: 1px solid #ccc; /* Mantiene el borde de las otras tarjetas */
+    border-radius: 8px; /* Mantiene el redondeado */
+    /* Nota: Debe tener la clase .list-item para que se vea igual que el resto */
+}
+
+/* --- Sombreado Alterno para Filas de Inventario --- */
+
+/* 1. Fondo principal para todas las filas (impares) */
+.inventory-row {
+    background-color: #fdf4f4; /* Blanco claro */
+    display: flex;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+/* 2. Fondo para las filas pares (un poco más oscuro) */
+.inventory-row:nth-child(even) {
+    background-color: #f5dbdb; 
+}
+
+/* Opcional: Asegurarnos de que el encabezado (la primera fila) no se altere */
+.inventory-table .inventory-row:first-child {
+    background: #dda5a5 !important;
+}
+
+/* style.css */
+.kit-indicator {
+    /*background-color: #e0e0e0;*/
+    color: #000000;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-left: 10px;
+    /* Aseguramos que el texto y el icono se mantengan en una sola línea */
+    white-space: nowrap; 
+}
+
+@keyframes hotspot-pulse {
+    0% {
+        background-color: rgba(44, 203, 231, 0.2); /* suave */
+        border-color: rgba(255, 255, 255, 0.6);
+    }
+    50% {
+        background-color: rgba(44, 203, 231, 0.9); /* brillante */
+        border-color: rgba(255, 255, 255, 1.0);
+    }
+    100% {
+        background-color: rgba(44, 203, 231, 0.2); /* Vuelve a suave */
+        border-color: rgba(255, 255, 255, 0.6);
+    }
+}
+
+/* style.css - Añade estos estilos */
+
+.select-nav-container {
+    display: flex;
+    gap: 10px; /* Espacio entre el desplegable de mes y año */
+    flex-grow: 1;
+    justify-content: center;
+    align-items: center;
+}
+
+/* style.css - Modificación en la regla de los desplegables del calendario */
+
+.select-nav-container select {
+    padding: 8px 5px 8px 12px; /* Aumentamos el padding derecho a 30px */
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1em;
+    font-weight: bold;
+    color: #444;
+    cursor: pointer;
+    
+    /* ... (Estilos de apariencia nativa eliminados) ... */
+    
+    /* Reposicionamos el fondo para que la flecha quede en el espacio extra de padding */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%22292.4%22%3E%3Cpath%20fill%3D%22%23444%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13.2-5.4H18.6c-5%200-9.3%201.8-13%205.4A17.6%2017.6%200%200%200%200%2082.6c0%204.4%201.8%208.7%205.4%2012L146.2%20227.4c3.7%203.6%208.3%205.4%2013%205.4s9.3-1.8%2013-5.4L287%2094.6c3.7-3.3%205.4-7.6%205.4-12s-1.7-8.7-5.4-12z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 10px;
+}
+
+/* Estilo para las imágenes del dashboard */
+.dashboard-icon {
+    width: 60px;  /* Ajusta el tamaño que desees */
+    height: 60px; /* Mantén el mismo valor para que sea cuadrado */
+    margin-bottom: 10px;
+    object-fit: contain; /* Asegura que la imagen se adapte sin cortar */
+}
+
+/* Opcional: Centrar el contenido de cada botón */
+/* Estilo para cada botón del Dashboard */
+.dashboard-item {
+    /* Mantenemos el flexbox para centrado (ya existente) */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    
+    /* --- SEPARACIÓN VISUAL Y ELEVACIÓN --- */
+    background-color: white; /* Fondo blanco */
+    border-radius: 12px;     /* Bordes redondeados */
+    padding: 20px;
+    margin-bottom: 15px;     /* Espacio entre cada tarjeta */
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Sombra suave para que "flote" */
+    transition: transform 0.2s, box-shadow 0.2s;
+    
+    /* Aseguramos que el texto sea visible */
+    text-align: center;
+}
+
+.dashboard-item:active {
+    transform: scale(0.98); /* Efecto de pulsación */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+/* Ajuste del contenedor principal para añadir espacio alrededor de las tarjetas */
+.dashboard-grid {
+    display: flex;
+    flex-direction: column; /* Colocamos las tarjetas una debajo de otra */
+    gap: 10px; /* Separación adicional entre filas */
+    padding: 0; /* Aseguramos que no haya padding extra en el grid */
+}
+
+/* Estilo para el texto debajo del icono */
+.dashboard-item p {
+    margin-top: 5px; 
+    font-size: 1.1em;
+    
+    /* --- ESTILO MODERNO Y GRUESO --- */
+    font-weight: 700; /* Hace el texto más grueso */
+    color: #444;      /* Color de texto oscuro, no negro puro */
+    text-transform: uppercase;
+    
+    /* --- SOMBRA DEL TEXTO --- */
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); /* Sombra muy ligera */
+}
+
+/* style.css */
+
+.video-container {
+    position: relative;
+    padding-bottom: 56.25%; /* Relación de aspecto 16:9 */
+    height: 0;
+    overflow: hidden;
+    margin-top: 10px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.video-container iframe, 
+.video-container video { /* <-- ASEGÚRATE DE INCLUIR LA REGLA PARA VIDEO */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}

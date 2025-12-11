@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bomberos Gijón</title>
+	<link rel="manifest" href="manifest.json">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<link rel="apple-touch-icon" href="images/icon-192.png">
+	<link rel="icon" type="image/png" href="images/favicon.png">
+	<link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png">
+    <link rel="stylesheet" href="style.css">
+    <script src="data.js" defer></script>
+    <script src="app.js" defer></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js"></script>
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <header>
+		<div class="header-left">
+			<button id="back-button" style="display: none;">
+				<img src="images/back-icon.png" alt="Volver" id="back-icon-img">
+			</button>
+		</div>
+		
+		<h1>Bomberos Gijón</h1>
+
+		<div id="header-action-icon" onclick="goToHome()">
+			<img src="images/favicon.png" id="header-logo-img" alt="Logo">
+		</div>
+	</header>
+
+    <main id="app-content">
+        </main>
+		
+	<div id="pdf-modal" class="modal" style="display: none;">
+		<div class="modal-header">
+			<span class="close-modal" onclick="closePdfModal()">&times; Cerrar</span>
+		</div>
+		<div id="pdf-canvas-viewer">
+			</div>
+	</div>
+</body>
+</html>
