@@ -7,6 +7,69 @@ let turnoSeleccionadoCal = 'T2'; // Turno por defecto al abrir
 const appContent = document.getElementById('app-content');
 const backButton = document.getElementById('back-button');
 
+// Your web app's Firebase configuration
+const firebaseConfig = {
+	apiKey: "AIzaSyByTB-HOyIdXloApJy-KVwcVSL90jJlW04",
+	authDomain: "bomberosgijonapp.firebaseapp.com",
+	projectId: "bomberosgijonapp",
+	storageBucket: "bomberosgijonapp.firebasestorage.app",
+	messagingSenderId: "373134027432",
+	appId: "1:373134027432:web:3ade1585f49aabd729309d"
+};
+
+// Inicializa Firebase y la Base de Datos
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Variables globales para almacenar los datos (se llenarán desde Firebase)
+let FIREBASE_DATA = {
+    VEHICLES: [],
+    DETAILS: {},
+    MATERIALS: {}
+};
+// ==========================================================
+
+
+// Variable para rastrear el historial de navegación... (resto del código)
+// ...
+
+// ----------------------------------------------------
+// Modificación crucial en el inicio de la aplicación
+// ----------------------------------------------------
+
+// Vamos a crear una función de inicialización que cargue los datos antes de renderizar.
+document.addEventListener('DOMContentLoaded', () => {
+    initializeApp(); 
+});
+
+async function initializeApp() {
+    console.log("Cargando datos desde Firebase...");
+    await loadFirebaseData(); // <--- Nueva función a crear
+    renderDashboard();
+}
+
+async function loadFirebaseData() {
+    try {
+        // 1. Cargar VEHICLES
+        const vehiclesSnapshot = await db.collection("vehicles").get();
+        FIREBASE_DATA.VEHICLES = vehiclesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // 2. Cargar TURNOS_CONFIG (Asumiendo que tienes una colección 'config')
+        // *Este paso es opcional, si mantienes TURNOS_CONFIG en data.js, sáltalo.*
+        
+        // 3. Cargar MATERIALES (simplificado, asume que DETAILS está en materiales)
+        const materialsSnapshot = await db.collection("materials").get();
+        materialsSnapshot.docs.forEach(doc => {
+            FIREBASE_DATA.MATERIALS[doc.id] = doc.data();
+        });
+
+        console.log("Datos de Firebase cargados con éxito.");
+
+    } catch (e) {
+        console.error("Fallo al cargar datos de Firebase:", e);
+        // Fallback: Si falla Firebase, usa los datos vacíos que dejamos en data.js
+    }
+}
 
 function navigateToSection(id) {
     if (id === 'inventario') renderVehiclesList(); // ID de data.js
@@ -669,4 +732,5 @@ function goToHome() {
     // Vaciamos el historial para que el botón de atrás desaparezca al renderizar el Dashboard
     navigationHistory = [];
     renderDashboard();
+
 }
