@@ -43,8 +43,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initializeApp() {
-    console.log("Cargando datos desde Firebase...");
-    await loadFirebaseData(); // <--- Nueva función a crear
+    // 1. Mostrar un mensaje de carga
+    render(`
+        <div style="text-align:center; padding-top: 50px;">
+            <p>Cargando datos del inventario desde la central...</p>
+            <div class="loader"></div> 
+        </div>`, 'Cargando...', { level: -1 }, false);
+    
+    await loadFirebaseData(); // <--- Llamada a la función de carga
+
+    // 2. Renderizar el Dashboard una vez que los datos estén listos
     renderDashboard();
 }
 
@@ -63,11 +71,24 @@ async function loadFirebaseData() {
             FIREBASE_DATA.MATERIALS[doc.id] = doc.data();
         });
 
+		// 4. Cargar DETAILS (Hotspots/Armarios. Es más complejo, lo cargamos como una colección)
+        // Por la estructura compleja (B12 -> B12-dcha -> Armarios), usaremos una aproximación simple
+        // Si tienes una colección 'details', la cargarías así:
+        const detailsSnapshot = await db.collection("details").get();
+        detailsSnapshot.docs.forEach(doc => {
+            FIREBASE_DATA.DETAILS[doc.id] = doc.data();
+        });
+
         console.log("Datos de Firebase cargados con éxito.");
 
     } catch (e) {
         console.error("Fallo al cargar datos de Firebase:", e);
-        // Fallback: Si falla Firebase, usa los datos vacíos que dejamos en data.js
+        // Si falla, mostramos un error y usamos los datos vacíos.
+        render(`
+            <div style="text-align:center; padding-top: 50px; color: red;">
+                <h4>ERROR DE CONEXIÓN</h4>
+                <p>No se pudieron cargar los datos de inventario. Verifica tu conexión o la configuración de Firebase.</p>
+            </div>`, 'ERROR', { level: -1 }, false);
     }
 }
 
@@ -208,7 +229,7 @@ function renderDashboard(isBack = false) {
 // Nivel 1: Lista de Vehículos (Título Actualizado)
 // ----------------------------------------------------
 function renderVehiclesList(isBack = false) {
-    const vehiclesHTML = DATA.VEHICLES.map(v => `
+    const vehiclesHTML = FIREBASE_DATA.VEHICLES.map(v => `
         <div class="list-item vehicle-card" onclick="showVehicleViews('${v.id}')">
             <img src="${v.image}" alt="${v.name}" class="vehicle-thumb">
             <div class="vehicle-info">
@@ -226,7 +247,7 @@ function renderVehiclesList(isBack = false) {
 // Nivel 2: Vistas del Vehículo (Encabezado eliminado)
 // ----------------------------------------------------
 function showVehicleViews(vehicleId, isBack = false) {
-    const vehicle = DATA.VEHICLES.find(v => v.id === vehicleId);
+    const vehicle = FIREBASE_DATA.VEHICLES.find(v => v.id === vehicleId);
     const detail = DATA.DETAILS[vehicleId];
     
     if (!detail) {
@@ -312,7 +333,7 @@ function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
     
     // Generamos las filas de la tabla
     const rowsHTML = hotspot.inventory.map(item => {
-        const material = DATA.MATERIALS[item.id];
+        const material = FIREBASE_DATA.MATERIALS[item.id];
         
         if (!material) return `<div class="inventory-row" style="color:red; padding:10px;">ID ${item.id} no encontrado</div>`;
 
@@ -347,7 +368,7 @@ function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
 
 // --- NIVEL 4 bis: Muestra una lista de material dentro de una caja, saca u otro contenedor ---
 function showKitInventory(kitId, parentName, isBack = false) {
-    const kit = DATA.MATERIALS[kitId];
+    const kit = FIREBASE_DATA.MATERIALS[kitId];
     
     if (!kit || !kit.kit_contents) {
         alert('Contenedor de kit no encontrado o vacío.');
@@ -355,7 +376,7 @@ function showKitInventory(kitId, parentName, isBack = false) {
     }
 
     const rowsHTML = kit.kit_contents.map(item => {
-        const material = DATA.MATERIALS[item.id];
+        const material = FIREBASE_DATA.MATERIALS[item.id];
         
         // El contenido del kit SIEMPRE va al Nivel 5 (detalles del material)
         const clickAction = `showMaterialDetails('${item.id}')`;
@@ -383,7 +404,7 @@ function showKitInventory(kitId, parentName, isBack = false) {
 
 // --- NIVEL 5: Detalles del Material (Navega al Nivel 6) ---
 function showMaterialDetails(materialId, isBack = false) {
-    const material = DATA.MATERIALS[materialId];
+    const material = FIREBASE_DATA.MATERIALS[materialId];
     const mainPhoto = material.docs.find(doc => doc.type === 'photo');
     const filteredDocs = material.docs.filter(doc => doc !== mainPhoto);
 
@@ -734,3 +755,4 @@ function goToHome() {
     renderDashboard();
 
 }
+
