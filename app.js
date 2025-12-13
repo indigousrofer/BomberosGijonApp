@@ -7,16 +7,6 @@ let turnoSeleccionadoCal = 'T2'; // Turno por defecto al abrir
 const appContent = document.getElementById('app-content');
 const backButton = document.getElementById('back-button');
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-	apiKey: "AIzaSyByTB-HOyIdXloApJy-KVwcVSL90jJlW04",
-	authDomain: "bomberosgijonapp.firebaseapp.com",
-	projectId: "bomberosgijonapp",
-	storageBucket: "bomberosgijonapp.firebasestorage.app",
-	messagingSenderId: "373134027432",
-	appId: "1:373134027432:web:3ade1585f49aabd729309d"
-};
-
 // Inicializa Firebase y la Base de Datos
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -755,4 +745,5 @@ function goToHome() {
     renderDashboard();
 
 }
+
 
