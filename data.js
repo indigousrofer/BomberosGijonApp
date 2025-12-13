@@ -3,6 +3,16 @@
 // Modifica los valores aquí para reflejar tus vehículos y material.
 // ==========================================================
 
+// AÑADIR ESTO: Tus credenciales para conectar la app
+const firebaseConfig = {
+  apiKey: "AIzaSyByTB-HOyIdXloApJy-KVwcVSL90jJlW04",
+  authDomain: "bomberosgijonapp.firebaseapp.com",
+  projectId: "bomberosgijonapp",
+  storageBucket: "bomberosgijonapp.firebasestorage.app",
+  messagingSenderId: "373134027432",
+  appId: "1:373134027432:web:3ade1585f49aabd729309d"
+};
+// ==========================================================
 
 const SECCIONES_INICIO = [
     { id: 'inventario', name: 'Vehículos y material', image_url: './images/camion-icon.png' },
@@ -18,16 +28,3 @@ const TURNOS_CONFIG = [
     { id: 'T4', name: 'Turno 4', color: '#ffbb00' },
     { id: 'T5', name: 'Turno 5', color: '#990099' }
 ];
-
-const DATA = {
-    // 1. Lista de Vehículos
-    VEHICLES: [],
-
-    // 2. Vistas y Armarios de CADA Vehículo
-    DETAILS: {},
-
-    // 3. Documentación y Detalles del Material
-    MATERIALS: {},
-    }
-
-};
