@@ -238,7 +238,7 @@ function renderVehiclesList(isBack = false) {
 // ----------------------------------------------------
 function showVehicleViews(vehicleId, isBack = false) {
     const vehicle = FIREBASE_DATA.VEHICLES.find(v => v.id === vehicleId);
-    const detail = DATA.DETAILS[vehicleId];
+    const detail = FIREBASE_DATA.DETAILS[vehicleId];
     
     if (!detail) {
         alert('Detalles del vehículo no encontrados.');
@@ -265,7 +265,7 @@ function showVehicleViews(vehicleId, isBack = false) {
 // Nivel 3: Vista Ampliada y Hotspots (Encabezado eliminado)
 // ----------------------------------------------------
 function showViewHotspots(vehicleId, viewId, isBack = false) {
-    const detail = DATA.DETAILS[vehicleId];
+    const detail = FIREBASE_DATA.DETAILS[vehicleId];
     const view = detail.views.find(v => v.id === viewId);
     const hotspots = detail.hotspots[viewId] || [];
 
@@ -318,7 +318,7 @@ function showViewHotspots(vehicleId, viewId, isBack = false) {
 // Nivel 4: Lista de Material (Encabezado eliminado)
 // ----------------------------------------------------
 function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
-    const detail = DATA.DETAILS[vehicleId];
+    const detail = FIREBASE_DATA.DETAILS[vehicleId];
     const hotspot = detail.hotspots[viewId][hotspotIndex];
     
     // Generamos las filas de la tabla
@@ -745,5 +745,6 @@ function goToHome() {
     renderDashboard();
 
 }
+
 
 
