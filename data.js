@@ -28,3 +28,4 @@ const TURNOS_CONFIG = [
     { id: 'T4', name: 'Turno 4', color: '#ffbb00' },
     { id: 'T5', name: 'Turno 5', color: '#990099' }
 ];
+
