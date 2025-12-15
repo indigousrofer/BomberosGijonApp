@@ -799,12 +799,11 @@ function goToHome() {
     if (navigationHistory.length > 0 && navigationHistory[navigationHistory.length - 1].level === 0) {
         return;
     }
-    
     // Vaciamos el historial para que el botón de atrás desaparezca al renderizar el Dashboard
     navigationHistory = [];
     renderDashboard();
-
 }
+
 
 
 
