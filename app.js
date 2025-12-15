@@ -412,11 +412,7 @@ function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
 	    `, hotspot.name, { level: 4, vehicleId, viewId, hotspotIndex }, isBack);
 	} else {
         // No tiene ni secciones ni inventario
-        render(`
-            <div style="text-align:center; padding:20px;">
-                <p>Armario vacío. No hay material definido.</p>
-            </div>
-        `, hotspot.name, { level: 4, ... });
+        render(`<div style="text-align:center; padding:20px;"><p>Armario vacío. No hay material definido.</p></div>`, hotspot.name, { level: 4, ... });
     }
 }
 
@@ -809,6 +805,7 @@ function goToHome() {
     renderDashboard();
 
 }
+
 
 
 
