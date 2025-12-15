@@ -786,14 +786,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderDashboard();
 });
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js')
-      .then(reg => console.log('Service Worker registrado con éxito', reg))
-      .catch(err => console.log('Error al registrar Service Worker', err));
-  });
-}
-
 function goToHome() {
     // Si ya estamos en el dashboard, no hacemos nada
     if (navigationHistory.length > 0 && navigationHistory[navigationHistory.length - 1].level === 0) {
@@ -803,6 +795,7 @@ function goToHome() {
     navigationHistory = [];
     renderDashboard();
 }
+
 
 
 
