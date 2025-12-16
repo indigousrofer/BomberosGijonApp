@@ -267,7 +267,16 @@ function showVehicleViews(vehicleId, isBack = false) {
 function showViewHotspots(vehicleId, viewId, isBack = false) {
     const detail = FIREBASE_DATA.DETAILS[vehicleId];
     const view = detail.views.find(v => v.id === viewId);
+	if (!view) {
+        console.error("View ID no encontrado para el vehículo:", viewId);
+        return;
+    }
     const hotspots = detail.hotspots[viewId] || [];
+
+	// --- LÍNEAS DE DIAGNÓSTICO ---
+    console.log("ID de Vista buscado:", viewId);
+    console.log("Hotspots ARRAY:", hotspots);
+    // ----------------------------
 
     let hotspotsHTML = hotspots.map((h, index) => {
         
@@ -795,6 +804,7 @@ function goToHome() {
     navigationHistory = [];
     renderDashboard();
 }
+
 
 
 
