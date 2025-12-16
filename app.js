@@ -255,6 +255,10 @@ function showVehicleViews(vehicleId, isBack = false) {
         </div>
     `).join('');
 
+	// --- LÍNEA DE DIAGNÓSTICO ---
+    console.log("HTML del Nivel 2 generado:", viewsHTML);
+    // ----------------------------
+	
     // Hemos quitado el <h2> de dentro del primer argumento
     render(`
         <div class="grid-container">${viewsHTML}</div>
@@ -804,6 +808,7 @@ function goToHome() {
     navigationHistory = [];
     renderDashboard();
 }
+
 
 
 
