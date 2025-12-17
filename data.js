@@ -17,7 +17,7 @@ const firebaseConfig = {
 const SECCIONES_INICIO = [
     { id: 'inventario', name: 'Vehículos', image_url: './images/camion-icon.png' },
     { id: 'material_global', name: 'Material', image_url: './images/material-icon.png' },
-    { id: 'mapa', name: 'Mapa de hidrantes', image_url: './images/mapa-icon.png' },
+    { id: 'mapa', name: 'Mapa de hidrantes', image_url: './images/mapa-hidrantes-icon.png' },
     { id: 'calendario', name: 'Calendario de Turnos', image_url: './images/calendar-icon.png' }
 ];
 
@@ -29,5 +29,6 @@ const TURNOS_CONFIG = [
     { id: 'T4', name: 'Turno 4', color: '#ffbb00' },
     { id: 'T5', name: 'Turno 5', color: '#990099' }
 ];
+
 
 
