@@ -799,7 +799,15 @@ body {
     font-weight: 600;
 }
 
+/* Estilo para los kits (Fondo ligeramente más oscuro y negrita) */
+.kit-row {
+    background-color: #ffeaa1 !important; /* Tono amarillo */
+    font-weight: 600;
+}
 
+.kit-row:hover {
+    background-color: #f2de99 !important; /* Un poco más oscuro al pasar el ratón */
+}
 
 .armario-image-container {
     margin-bottom: 20px;
@@ -825,6 +833,7 @@ body {
 	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     z-index: 10;
 }
+
 
 
 
