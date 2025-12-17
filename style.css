@@ -271,57 +271,71 @@ h1 {
     border-radius: 4px;    /* Un pequeño redondeado */
 }
 
-/* Contenedor de la tabla de inventario */
+/* --- SECCIÓN DE TABLAS DE INVENTARIO ACTUALIZADA --- */
+
 .inventory-table {
-	margin-top: 10px; /* Un poco de aire entre el header y la tabla */
+    margin-top: 10px;
     width: 100%;
-    border-collapse: collapse;
     background: white;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* 1. La fila debe impedir que sus hijos se desmadren */
+/* Estilo base de la fila */
 .inventory-row {
     display: flex;
     width: 100%;
-    align-items: stretch; /* Estira las columnas para que midan lo mismo de alto */
+    align-items: stretch; /* Hace que ambas columnas midan lo mismo de alto */
     border-bottom: 1px solid #eee;
-    box-sizing: border-box;
+    cursor: pointer;
+    transition: background 0.2s;
+    background-color: #fdf4f4; /* Color impar por defecto */
 }
 
-.inventory-row:hover {
-    background-color: #f9f9f9;
+.inventory-row:nth-child(even) {
+    background-color: #f5dbdb; /* Color par */
 }
 
-* 2. Columna de cantidad: BLOQUEO TOTAL */
-.col-qty {
-    width: 50px !important;      /* Ancho fijo inamovible */
-    min-width: 50px !important;  /* Impide que se encoja */
-    max-width: 50px !important;  /* Impide que crezca */
-    flex: 0 0 50px !important;   /* No crece, no se encoge, base 50px */
-    
-    padding: 15px 0;
+/* CABECERA ROJA: Sobrescribe el color de la fila */
+.inventory-header {
+    background-color: #AA1915 !important;
+    color: white !important;
     font-weight: bold;
-    text-align: center;
-    border-right: 2px solid rgba(0, 0, 0, 0.1);
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    cursor: default;
 }
 
-/* 3. Columna de nombre: OCUPAR EL RESTO */
+/* KITS AMARILLOS: Sobrescribe el color de la fila */
+.kit-row {
+    background-color: #ffeaa1 !important;
+    font-weight: bold !important;
+    color: #000 !important;
+}
+
+/* COLUMNA CANTIDAD: Ancho fijo y centrado perfecto */
+.col-qty {
+    width: 60px !important;      /* Ancho unificado y más cómodo */
+    flex: 0 0 60px !important;   /* Bloqueo total: no se estira ni se encoge */
+    display: flex;               /* Activamos flex para centrar */
+    align-items: center;         /* Centrado VERTICAL */
+    justify-content: center;     /* Centrado HORIZONTAL */
+    font-weight: bold;
+    border-right: 2px solid rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+    padding: 10px 0;
+    color: inherit;              /* Hereda el blanco del header o negro del kit */
+}
+
+/* COLUMNA NOMBRE: Espacio flexible */
 .col-name {
-    flex: 1 1 auto !important;   /* Ocupa todo el espacio restante */
-    min-width: 0;                /* Permite que el contenido se ajuste al ancho sobrante */
+    flex: 1;                     /* Toma todo el espacio restante */
+    min-width: 0;                /* Permite que el texto largo se ajuste */
     padding: 15px;
     display: flex;
-    align-items: center;
+    align-items: center;         /* Centrado VERTICAL */
     justify-content: space-between;
-    word-break: break-word;      /* Rompe palabras si es necesario para no empujar */
-    box-sizing: border-box;
+    word-break: break-word;      /* Rompe palabras si son demasiado largas */
+    color: inherit;
 }
 
 
@@ -847,6 +861,7 @@ body {
 .kit-row .col-qty, .kit-row .col-name {
     color: #000 !important;
 }
+
 
 
 
