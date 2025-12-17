@@ -813,12 +813,13 @@ body {
 
 /* Estilo para los kits (Fondo ligeramente más oscuro y negrita) */
 .kit-row {
-    background-color: #ebc036; /* Tono amarillo */
+    background-color: #ebc242; /* Tono amarillo */
     font-weight: bold;
 }
 
 .kit-row:hover {
-    background-color: #d6af31; /* Un poco más oscuro al pasar el ratón */
+    background-color: #d6b03e; /* Un poco más oscuro al pasar el ratón */
 }
+
 
 
