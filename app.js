@@ -3,6 +3,7 @@ let navigationHistory = [];
 let mesActualCal = new Date().getMonth();
 let añoActualCal = new Date().getFullYear();
 let turnoSeleccionadoCal = 'T2'; // Turno por defecto al abrir
+let lastMaterialSearch = '';
 
 const appContent = document.getElementById('app-content');
 const backButton = document.getElementById('back-button');
@@ -550,8 +551,6 @@ function handleManualOpen(materialId, docName) {
 // --- SECCIÓN 2: BUSCADOR GLOBAL DE MATERIAL --- ///
 /// --------------------------------------------- ///
 
-let lastMaterialSearch = '';
-
 function renderGlobalMaterialList(isBack = false) {
     // 1. Creamos el buscador y el contenedor de la tabla
     // Si no estamos volviendo atrás, reseteamos la búsqueda o la mantenemos según prefieras
@@ -578,15 +577,13 @@ function generateGlobalTableHTML(filter = '') {
             <div class="col-name" style="padding-left: 20px;">Nombre del Material</div>
         </div>
     `;
-
     const searchTerm = filter.toLowerCase();
 
-    // FILTRO PROFUNDO: Busca en nombre del material O en el contenido de sus kits
     const filteredIds = Object.keys(FIREBASE_DATA.MATERIALS).filter(id => {
         const m = FIREBASE_DATA.MATERIALS[id];
         const matchNombre = m.name.toLowerCase().includes(searchTerm);
         
-        // Si no coincide el nombre, miramos si el término está dentro del kit
+        // Búsqueda dentro de kits
         let matchContenidoKit = false;
         if (m.is_kit && m.kit_contents) {
             matchContenidoKit = m.kit_contents.some(item => {
@@ -594,25 +591,17 @@ function generateGlobalTableHTML(filter = '') {
                 return subMaterial && subMaterial.name.toLowerCase().includes(searchTerm);
             });
         }
-        
         return matchNombre || matchContenidoKit;
     });
 
-    const rows = filteredIds.map(id => {
+    return header + filteredIds.map(id => {
         const m = FIREBASE_DATA.MATERIALS[id];
         const kitIcon = m.is_kit ? '💼 ' : '';
-        const kitLabel = m.is_kit ? ' <span class="kit-indicator">(Kit)</span>' : '';
-        
         return `
             <div class="inventory-row" onclick="showGlobalMaterialDetail('${id}')">
-                <div class="col-name" style="padding-left: 20px;">
-                    ${kitIcon}${m.name}${kitLabel}
-                </div>
-            </div>
-        `;
+                <div class="col-name" style="padding-left: 20px;">${kitIcon}${m.name}</div>
+            </div>`;
     }).join('');
-
-    return header + rows;
 }
 
 function filterMaterials(text) {
@@ -935,19 +924,42 @@ backButton.addEventListener('click', () => {
         const target = navigationHistory[navigationHistory.length - 1]; 
         
 		if (target.level === 0) renderDashboard(true); // Nuevo retroceso al 0
-        if (target.level === 1) {
-		    // Si venimos del buscador global, volvemos al buscador
-		    if (target.section === 'material_global') {
-		        renderGlobalMaterialList(true);
-		    } else if (target.section === 'calendario') {
-		        renderCalendarioSection();
-		    } else if (target.section === 'mapa') {
-		        renderMapaSection();
-		    } else {
-		        // Por defecto, nivel 1 de inventario
-		        renderVehiclesList(true);
+        backButton.addEventListener('click', () => {
+		    if (navigationHistory.length > 1) {
+		        navigationHistory.pop(); 
+		        const target = navigationHistory[navigationHistory.length - 1]; 
+		
+		        if (target.level === 0) renderDashboard(true);
+		        
+		        // --- BLOQUE ACTUALIZADO PARA NIVEL 1 ---
+		        if (target.level === 1) {
+		            if (target.section === 'material_global') {
+		                renderGlobalMaterialList(true); // Vuelve al buscador
+		            } else if (target.section === 'mapa') {
+		                renderMapaSection(true);
+		            } else if (target.section === 'calendario') {
+		                renderCalendarioSection(true);
+		            } else {
+		                renderVehiclesList(true); // Comportamiento por defecto (Vehículos)
+		            }
+		        }
+		        // ---------------------------------------
+		
+		        if (target.level === 2) showVehicleViews(target.vehicleId, true);
+		        if (target.level === 3) showViewHotspots(target.vehicleId, target.viewId, true);
+		        if (target.level === 4) showArmarioMaterial(target.vehicleId, target.viewId, target.hotspotIndex, true);
+		        if (target.level === 4.5) showKitInventory(target.kitId, target.parentName, true);
+		        if (target.level === 5) {
+		            // Si el nivel 5 viene de una búsqueda global, usamos la función global
+		            if (target.section === 'material_global') {
+		                showGlobalMaterialDetail(target.materialId, true);
+		            } else {
+		                showMaterialDetails(target.materialId, true);
+		            }
+		        }
+		        if (target.level === 6) renderResource(target.materialId, target.url, target.type, target.resourceName, true);
 		    }
-		}
+		});
         if (target.level === 2) showVehicleViews(target.vehicleId, true);
         if (target.level === 3) showViewHotspots(target.vehicleId, target.viewId, true);
         if (target.level === 4) showArmarioMaterial(target.vehicleId, target.viewId, target.hotspotIndex, true);
@@ -991,6 +1003,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     renderDashboard();
 });
+
 
 
 
