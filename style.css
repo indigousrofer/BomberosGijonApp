@@ -293,21 +293,22 @@ h1 {
     background-color: #f9f9f9;
 }
 
+/* --- MODIFICACIÓN 1: Limpiar las columnas para que hereden el fondo de la fila --- */
 .col-qty {
     width: 40px;
     padding: 15px;
     font-weight: bold;
-    color: #7a1511;
-	background-color: #AA1915;
+    color: inherit; /* Cambiado: hereda el color del texto de la fila */
+    background-color: transparent; /* Cambiado: quita el rojo fijo */
     text-align: center;
-    border-right: 2px solid #eee;
+    border-right: 2px solid rgba(255,255,255,0.2); /* Borde más sutil */
 }
 
 .col-name {
     flex-grow: 1;
     padding: 15px;
-    color: #000000;
-	background-color: #AA1915;
+    color: inherit; /* Cambiado: hereda el color del texto de la fila */
+    background-color: transparent; /* Cambiado: quita el rojo fijo */
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -817,14 +818,26 @@ body {
     margin: 0 auto;
 }
 
-/* Limpiamos y dejamos solo la regla de estructura */
-.kit-inventory-header {
-    display: flex !important;
-    align-items: center !important;
-    cursor: default !important;
-	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    z-index: 10;
+/* --- MODIFICACIÓN 2: Definir el Header Rojo y el Kit Amarillo --- */
+
+/* Regla para todas las cabeceras de tabla */
+.inventory-header {
+    background-color: #AA1915 !important;
+    color: white !important;
+    font-weight: bold;
 }
+
+/* Regla para resaltar los Kits en las tablas de armarios */
+.kit-row {
+    background-color: #ffeaa1 !important; /* Amarillo suave */
+    font-weight: bold !important;
+}
+
+/* Asegurar que el texto dentro del kit sea negro para legibilidad */
+.kit-row .col-qty, .kit-row .col-name {
+    color: #000 !important;
+}
+
 
 
 
