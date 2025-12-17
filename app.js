@@ -164,6 +164,12 @@ function render(contentHTML, title, state, isBack = false) {
     appContent.innerHTML = contentHTML;
     document.querySelector('header h1').textContent = title;
 
+	// --- NUEVO: Registrar el estado en el historial del navegador ---
+    if (!isBack) {
+        // Añadimos una entrada al historial del navegador cada vez que navegamos adelante
+        history.pushState(state, title); 
+    }
+	
     const actionIcon = document.getElementById('header-action-icon');
     const logoImg = document.getElementById('header-logo-img');
 
@@ -172,10 +178,12 @@ function render(contentHTML, title, state, isBack = false) {
         // En el Dashboard: Logo del parque y NO es clicable
         logoImg.src = "images/favicon.png"; 
         actionIcon.classList.remove('header-logo-active');
+		backButton.style.display = 'none';
     } else {
         // En cualquier otro nivel: Icono Home y ES clicable
         logoImg.src = "images/home-icon.png"; 
         actionIcon.classList.add('header-logo-active');
+		backButton.style.display = 'inline';
     }
 
     // Guardamos en el historial si no estamos volviendo atrás
@@ -803,6 +811,27 @@ function goToHome() {
     navigationHistory = [];
     renderDashboard();
 }
+
+// --- INTERCEPTAR BOTÓN ATRÁS DE ANDROID ---
+window.addEventListener('popstate', (event) => {
+    // Si hay historial en nuestra app, ejecutamos nuestra lógica de atrás
+    if (navigationHistory.length > 1) {
+        // Forzamos el clic en nuestro botón físico de la app
+        // para reutilizar toda la lógica que ya tienes escrita
+        backButton.click();
+    } else {
+        // Si estamos en el Home (Nivel 0), no hacemos nada o dejamos que salga
+        // Para evitar que salga, podríamos poner un pushState vacío aquí
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Al cargar, establecemos el estado inicial para que Android sepa que ya hay una "página"
+    const initialState = { level: 0 };
+    history.replaceState(initialState, "Bomberos Gijón");
+    renderDashboard();
+});
+
 
 
 
