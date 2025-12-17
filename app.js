@@ -616,42 +616,59 @@ function showGlobalMaterialDetail(materialId, isBack = false) {
     // 1. Lógica de búsqueda de ubicaciones (tu código actual)
     let ubicacionesHTML = '';
     const ubicaciones = [];
+    
     Object.keys(FIREBASE_DATA.DETAILS).forEach(vId => {
         const vehiculo = FIREBASE_DATA.VEHICLES.find(v => v.id === vId);
         const hotspotsData = FIREBASE_DATA.DETAILS[vId].hotspots;
+        
         Object.keys(hotspotsData).forEach(viewId => {
-			// Recorremos cada armario/hotspot
-            hotspotsData[viewId].forEach(hotspot => {
-			    // Función auxiliar para revisar una lista de items (simple o secciones)
-			    const revisarLista = (items, nombreLugar) => {
-			        items.forEach(item => {
-			            // 1. ¿Es el material directo?
-			            if (item.id === materialId) {
-			                ubicaciones.push({ vehiculo: vehiculo.name, armario: nombreLugar });
-			            }
-			            // 2. ¿Está dentro de un kit que está en este lugar?
-			            const materialEnLista = FIREBASE_DATA.MATERIALS[item.id];
-			            if (materialEnLista && materialEnLista.is_kit && materialEnLista.kit_contents) {
-			                if (materialEnLista.kit_contents.some(sub => sub.id === materialId)) {
-			                    ubicaciones.push({ 
-			                        vehiculo: vehiculo.name, 
-			                        armario: `${nombreLugar} -> Dentro de ${materialEnLista.name}` 
-			                    });
-			                }
-			            }
-			        });
-			    };
-			
-			    if (hotspot.inventory) revisarLista(hotspot.inventory, hotspot.name);
-			    if (hotspot.sections) {
-			        hotspot.sections.forEach(sec => revisarLista(sec.items, `${hotspot.name} (${sec.name})`));
-			    }
-			});
+            hotspotsData[viewId].forEach((hotspot, hIndex) => { // Añadimos hIndex
+                
+                const revisarLista = (items, nombreLugar) => {
+                    items.forEach(item => {
+                        // 1. ¿Es el material directo?
+                        if (item.id === materialId) {
+                            ubicaciones.push({ 
+                                vName: vehiculo.name, 
+                                vId: vId, 
+                                viewId: viewId, 
+                                hIndex: hIndex, 
+                                armario: nombreLugar 
+                            });
+                        }
+                        // 2. ¿Está dentro de un kit?
+                        const materialEnLista = FIREBASE_DATA.MATERIALS[item.id];
+                        if (materialEnLista?.is_kit && materialEnLista.kit_contents?.some(sub => sub.id === materialId)) {
+                            ubicaciones.push({ 
+                                vName: vehiculo.name, 
+                                vId: vId, 
+                                viewId: viewId, 
+                                hIndex: hIndex, 
+                                armario: `${nombreLugar} (Dentro de ${materialEnLista.name})` 
+                            });
+                        }
+                    });
+                };
+
+                if (hotspot.inventory) revisarLista(hotspot.inventory, hotspot.name);
+                if (hotspot.sections) {
+                    hotspot.sections.forEach(sec => revisarLista(sec.items, `${hotspot.name} (${sec.name})`));
+                }
+            });
         });
     });
 
+    // Generamos el HTML con el evento onclick para navegar al armario
     ubicacionesHTML = ubicaciones.length > 0 
-        ? ubicaciones.map(u => `<div class="list-item" style="border-left: 5px solid #AA1915; margin-bottom: 5px; padding: 10px;"><strong>${u.vehiculo}</strong>: ${u.armario}</div>`).join('')
+        ? ubicaciones.map(u => `
+            <div class="list-item" 
+                 style="border-left: 5px solid #AA1915; margin-bottom: 8px; padding: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;"
+                 onclick="showArmarioMaterial('${u.vId}', '${u.viewId}', ${u.hIndex})">
+                <div>
+                    <strong>${u.vName}</strong>: ${u.armario}
+                </div>
+                <span style="font-size: 1.2em;">📍</span>
+            </div>`).join('')
         : '<p>No se han encontrado ubicaciones registradas.</p>';
 
     // 2. Lógica de Documentos (Recuperada de tu showMaterialDetails original)
@@ -810,6 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     initializeApp(); 
 });
+
 
 
 
