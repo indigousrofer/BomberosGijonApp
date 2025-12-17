@@ -314,8 +314,8 @@ h1 {
 
 /* COLUMNA CANTIDAD: Ancho fijo y centrado perfecto */
 .col-qty {
-    width: 75px !important;      /* Aumentamos el ancho según tu petición */
-    flex: 0 0 75px !important;   /* Bloqueo total para que no se estreche */
+    width: 60px !important;      /* Aumentamos el ancho según tu petición */
+    flex: 0 0 60px !important;   /* Bloqueo total para que no se estreche */
     display: flex !important;    /* Forzamos flexbox */
     align-items: center !important;    /* CENTRADO VERTICAL REAL */
     justify-content: center !important;  /* Centrado horizontal */
@@ -864,6 +864,7 @@ body {
 .kit-row .col-qty, .kit-row .col-name {
     color: #000 !important;
 }
+
 
 
 
