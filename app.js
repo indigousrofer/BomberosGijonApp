@@ -427,6 +427,10 @@ function showKitInventory(kitId, parentName, isBack = false) {
         return;
     }
 
+	const headerHTML = `
+	    <div class="inventory-row inventory-header"> <div class="col-qty">nº</div>
+	        <div class="col-name">Material</div>
+	    </div>
     const rowsHTML = kit.kit_contents.map(item => {
         const material = FIREBASE_DATA.MATERIALS[item.id];
         
@@ -442,15 +446,20 @@ function showKitInventory(kitId, parentName, isBack = false) {
         `;
     }).join('');
 
+	contentHTML += `
+            <div class="inventory-table">
+                ${headerHTML}${rowsHTML}
+            </div>`;
     // Renderizamos la lista con un nivel de 4.5 para el historial
-    render(`
+    /*render(`
         <div class="inventory-table">
             <div class="inventory-row inventory-header"> <div class="col-qty">Cant.</div>
                 <div class="col-name">Material</div>
             </div>
             ${rowsHTML}
         </div>
-    `, kit.name, { level: 4.5, kitId, parentName }, isBack);
+    `, kit.name, { level: 4.5, kitId, parentName }, isBack);*/
+	render(contentHTML, hotspot.name, { level: 4, vehicleId, viewId, hotspotIndex }, isBack);
 }
 
 // --- NIVEL 5: Detalles del Material (Navega al Nivel 6) ---
@@ -796,6 +805,7 @@ function goToHome() {
     navigationHistory = [];
     renderDashboard();
 }
+
 
 
 
