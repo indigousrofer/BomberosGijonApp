@@ -821,8 +821,9 @@ body {
     background-color: #f2de99 !important; /* Un poco más oscuro al pasar el ratón */
 }
 
-/* ESTILO ESPECÍFICO PARA EL ENCABEZADO DE LA TABLA DE CONTENIDO DEL KIT */
-.kit-inventory-header {
+* ESTILO ESPECÍFICO PARA EL ENCABEZADO DE LA TABLA DE CONTENIDO DEL KIT */
+/* Se añade el selector del padre para igualar o superar la especificidad de la regla genérica. */
+.inventory-table .kit-inventory-header {
     background-color: #ffeaa1 !important; /* ¡FUERZA el color #ffeaa1! */
     font-weight: bold;
     cursor: default;
