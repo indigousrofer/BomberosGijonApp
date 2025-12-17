@@ -245,15 +245,33 @@ function showVehicleViews(vehicleId, isBack = false) {
         return;
     }
 
-    const viewsHTML = detail.views.map(view => `
-        <div class="list-item vehicle-card" onclick="showViewHotspots('${vehicleId}', '${view.id}')">
-            <img src="${view.image}" alt="${view.name}" class="vehicle-thumb">
-            <div class="vehicle-info">
-                <h2>${view.name}</h2>
-                <p>Pulsa para ver armarios de esta zona</p>
+    const viewsHTML = detail.views.map(view => {
+        
+        // 1. Determinar la acción al hacer clic
+        let clickAction;
+        
+        if (view.direct_access) {
+            // Si es acceso directo, necesitamos saber qué hotspot abrir.
+            // ASUNCIÓN: Si tiene 'direct_access: true', solo tiene UN hotspot definido en su ID.
+            
+            // Acceso directo a la tabla de contenidos (Nivel 4)
+            clickAction = `showArmarioMaterial('${vehicleId}', '${view.id}', 0)`; 
+        } else {
+            // Navegación normal al visor de hotspots (Nivel 3)
+            clickAction = `showViewHotspots('${vehicleId}', '${view.id}')`;
+        }
+        
+        // 2. Generar el HTML con la acción correcta
+        return `
+            <div class="list-item vehicle-card" onclick="${clickAction}">
+                <img src="${view.image}" alt="${view.name}" class="vehicle-thumb">
+                <div class="vehicle-info">
+                    <h2>${view.name}</h2>
+                    <p>Pulsa para ver armarios de esta zona</p>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 	
     // Hemos quitado el <h2> de dentro del primer argumento
     render(`
@@ -797,6 +815,7 @@ function goToHome() {
     navigationHistory = [];
     renderDashboard();
 }
+
 
 
 
