@@ -650,6 +650,13 @@ body {
     background: #dda5a5 !important;
 }
 
+/* ESTILO ESPECÍFICO PARA EL ENCABEZADO DE LA TABLA DE CONTENIDO DEL KIT */
+.kit-inventory-header {
+    background-color: #ffeaa1 !important; /* ¡FUERZA el color #ffeaa1! */
+    font-weight: bold;
+    cursor: default;
+}
+
 /* style.css */
 .kit-indicator {
     /*background-color: #e0e0e0;*/
@@ -821,12 +828,7 @@ body {
     background-color: #f2de99 !important; /* Un poco más oscuro al pasar el ratón */
 }
 
-/* ESTILO ESPECÍFICO PARA EL ENCABEZADO DE LA TABLA DE CONTENIDO DEL KIT */
-.kit-inventory-header {
-    background-color: #ffeaa1 !important; /* ¡FUERZA el color #ffeaa1! */
-    font-weight: bold;
-    cursor: default;
-}
+
 
 
 
