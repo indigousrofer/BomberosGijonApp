@@ -166,39 +166,24 @@ function render(contentHTML, title, state, isBack = false) {
     appContent.innerHTML = contentHTML;
     document.querySelector('header h1').textContent = title;
 
-	// Solo añadimos al historial de navegación si NO estamos retrocediendo
+    // Solo gestionamos el historial si NO estamos volviendo atrás
     if (!isBack) {
         navigationHistory.push(state);
-        // Sincronizamos con el historial de Android/Navegador
+        // Esto es vital para que el botón de Android no cierre la app de golpe
         history.pushState(state, title);
     }
-	
+
     const actionIcon = document.getElementById('header-action-icon');
     const logoImg = document.getElementById('header-logo-img');
+    const backButton = document.getElementById('back-button');
 
-    // --- LÓGICA DE ICONOS (DERECHA) ---
     if (state.level === 0) {
-        // En el Dashboard: Logo del parque y NO es clicable
-        logoImg.src = "images/favicon.png"; 
+        logoImg.src = "images/favicon.png";
         actionIcon.classList.remove('header-logo-active');
-		backButton.style.display = 'none';
-    } else {
-        // En cualquier otro nivel: Icono Home y ES clicable
-        logoImg.src = "images/home-icon.png"; 
-        actionIcon.classList.add('header-logo-active');
-		backButton.style.display = 'inline';
-    }
-
-    // Guardamos en el historial si no estamos volviendo atrás
-    if (!isBack) {
-        navigationHistory.push(state);
-    }
-
-    // --- LÓGICA DEL BOTÓN VOLVER (IZQUIERDA) ---
-    // Solo se muestra si NO estamos en el nivel 0
-    if (state.level === 0) {
         backButton.style.display = 'none';
     } else {
+        logoImg.src = "images/home-icon.png";
+        actionIcon.classList.add('header-logo-active');
         backButton.style.display = 'inline';
     }
 }
@@ -688,7 +673,7 @@ function showGlobalMaterialDetail(materialId, isBack = false) {
         ${docsHTML}
     `;
 
-    render(content, material.name, { level: 5, materialId, section: 'material_global' }, isBack); //
+    render(content, material.name, { level: 5, materialId: materialId, section: 'material_global' }, isBack); //
 }
 // ----------------------------------------------------
 // LÓGICA DEL CALENDARIO
@@ -923,19 +908,21 @@ function cambiarTurnoCal(turnoId) {
 // ----------------------------------------------------
 // LÓGICA DEL BOTÓN VOLVER
 // ----------------------------------------------------
-backButton.addEventListener('click', () => {
+// Función única de retroceso
+function handleBackNavigation() {
     if (navigationHistory.length > 1) {
-        navigationHistory.pop(); // Quitamos el nivel actual (el detalle)
-        const target = navigationHistory[navigationHistory.length - 1]; // El anterior (la búsqueda)
-
-        // Reset de scroll para que no aparezca a mitad de página
-        window.scrollTo(0, 0);
-
-        if (target.level === 0) renderDashboard(true);
+        // 1. Eliminamos el estado actual
+        navigationHistory.pop();
         
-        if (target.level === 1) {
+        // 2. Obtenemos el estado al que queremos ir
+        const target = navigationHistory[navigationHistory.length - 1];
+
+        // 3. Ejecutamos la función de renderizado correspondiente pasándole isBack = true
+        if (target.level === 0) {
+            renderDashboard(true);
+        } else if (target.level === 1) {
             if (target.section === 'material_global') {
-                renderGlobalMaterialList(true); // RE-RENDER DEL BUSCADOR
+                renderGlobalMaterialList(true);
             } else if (target.section === 'mapa') {
                 renderMapaSection(true);
             } else if (target.section === 'calendario') {
@@ -943,24 +930,33 @@ backButton.addEventListener('click', () => {
             } else {
                 renderVehiclesList(true);
             }
-        }
-
-        if (target.level === 2) showVehicleViews(target.vehicleId, true);
-        if (target.level === 3) showViewHotspots(target.vehicleId, target.viewId, true);
-        if (target.level === 4) showArmarioMaterial(target.vehicleId, target.viewId, target.hotspotIndex, true);
-        if (target.level === 4.5) showKitInventory(target.kitId, target.parentName, true);
-        
-        if (target.level === 5) {
-            // Importante: distinguir si volvemos a un detalle desde un recurso (Nivel 6)
+        } else if (target.level === 2) {
+            showVehicleViews(target.vehicleId, true);
+        } else if (target.level === 3) {
+            showViewHotspots(target.vehicleId, target.viewId, true);
+        } else if (target.level === 4) {
+            showArmarioMaterial(target.vehicleId, target.viewId, target.hotspotIndex, true);
+        } else if (target.level === 4.5) {
+            showKitInventory(target.kitId, target.parentName, true);
+        } else if (target.level === 5) {
             if (target.section === 'material_global') {
                 showGlobalMaterialDetail(target.materialId, true);
             } else {
                 showMaterialDetails(target.materialId, true);
             }
+        } else if (target.level === 6) {
+            renderResource(target.materialId, target.url, target.type, target.resourceName, true);
         }
-        
-        if (target.level === 6) renderResource(target.materialId, target.url, target.type, target.resourceName, true);
     }
+}
+
+// Asignamos la función al botón de la interfaz
+document.getElementById('back-button').addEventListener('click', handleBackNavigation);
+
+// Interceptamos el botón de Android/Navegador
+window.addEventListener('popstate', (event) => {
+    // Si el usuario pulsa atrás en el sistema, ejecutamos nuestra lógica
+    handleBackNavigation();
 });
 
 // Al cargar la primera vez, vamos al Dashboard (Nivel 0)
@@ -997,6 +993,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     renderDashboard();
 });
+
 
 
 
