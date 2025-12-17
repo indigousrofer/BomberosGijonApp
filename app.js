@@ -166,10 +166,11 @@ function render(contentHTML, title, state, isBack = false) {
     appContent.innerHTML = contentHTML;
     document.querySelector('header h1').textContent = title;
 
-	// --- NUEVO: Registrar el estado en el historial del navegador ---
+	// Solo añadimos al historial de navegación si NO estamos retrocediendo
     if (!isBack) {
-        // Añadimos una entrada al historial del navegador cada vez que navegamos adelante
-        history.pushState(state, title); 
+        navigationHistory.push(state);
+        // Sincronizamos con el historial de Android/Navegador
+        history.pushState(state, title);
     }
 	
     const actionIcon = document.getElementById('header-action-icon');
@@ -924,53 +925,40 @@ function cambiarTurnoCal(turnoId) {
 // ----------------------------------------------------
 backButton.addEventListener('click', () => {
     if (navigationHistory.length > 1) {
-        // Quitamos el nivel actual
-        navigationHistory.pop(); 
-        // Cogemos el estado anterior
-        const target = navigationHistory[navigationHistory.length - 1]; 
+        navigationHistory.pop(); // Quitamos el nivel actual (el detalle)
+        const target = navigationHistory[navigationHistory.length - 1]; // El anterior (la búsqueda)
+
+        // Reset de scroll para que no aparezca a mitad de página
+        window.scrollTo(0, 0);
+
+        if (target.level === 0) renderDashboard(true);
         
-		if (target.level === 0) renderDashboard(true); // Nuevo retroceso al 0
-        backButton.addEventListener('click', () => {
-		    if (navigationHistory.length > 1) {
-		        navigationHistory.pop(); 
-		        const target = navigationHistory[navigationHistory.length - 1]; 
-		
-		        if (target.level === 0) renderDashboard(true);
-		        
-		        // --- BLOQUE ACTUALIZADO PARA NIVEL 1 ---
-		        if (target.level === 1) {
-		            if (target.section === 'material_global') {
-		                renderGlobalMaterialList(true); // Vuelve al buscador
-		            } else if (target.section === 'mapa') {
-		                renderMapaSection(true);
-		            } else if (target.section === 'calendario') {
-		                renderCalendarioSection(true);
-		            } else {
-		                renderVehiclesList(true); // Comportamiento por defecto (Vehículos)
-		            }
-		        }
-		        // ---------------------------------------
-		
-		        if (target.level === 2) showVehicleViews(target.vehicleId, true);
-		        if (target.level === 3) showViewHotspots(target.vehicleId, target.viewId, true);
-		        if (target.level === 4) showArmarioMaterial(target.vehicleId, target.viewId, target.hotspotIndex, true);
-		        if (target.level === 4.5) showKitInventory(target.kitId, target.parentName, true);
-		        if (target.level === 5) {
-		            // Si el nivel 5 viene de una búsqueda global, usamos la función global
-		            if (target.section === 'material_global') {
-		                showGlobalMaterialDetail(target.materialId, true);
-		            } else {
-		                showMaterialDetails(target.materialId, true);
-		            }
-		        }
-		        if (target.level === 6) renderResource(target.materialId, target.url, target.type, target.resourceName, true);
-		    }
-		});
+        if (target.level === 1) {
+            if (target.section === 'material_global') {
+                renderGlobalMaterialList(true); // RE-RENDER DEL BUSCADOR
+            } else if (target.section === 'mapa') {
+                renderMapaSection(true);
+            } else if (target.section === 'calendario') {
+                renderCalendarioSection(true);
+            } else {
+                renderVehiclesList(true);
+            }
+        }
+
         if (target.level === 2) showVehicleViews(target.vehicleId, true);
         if (target.level === 3) showViewHotspots(target.vehicleId, target.viewId, true);
         if (target.level === 4) showArmarioMaterial(target.vehicleId, target.viewId, target.hotspotIndex, true);
         if (target.level === 4.5) showKitInventory(target.kitId, target.parentName, true);
-        if (target.level === 5) showMaterialDetails(target.materialId, true);
+        
+        if (target.level === 5) {
+            // Importante: distinguir si volvemos a un detalle desde un recurso (Nivel 6)
+            if (target.section === 'material_global') {
+                showGlobalMaterialDetail(target.materialId, true);
+            } else {
+                showMaterialDetails(target.materialId, true);
+            }
+        }
+        
         if (target.level === 6) renderResource(target.materialId, target.url, target.type, target.resourceName, true);
     }
 });
@@ -1009,6 +997,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     renderDashboard();
 });
+
 
 
 
