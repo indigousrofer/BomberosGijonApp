@@ -428,7 +428,7 @@ function showKitInventory(kitId, parentName, isBack = false) {
     }
 
     const headerHTML = `
-        <div class="inventory-row inventory-header">
+        <div class="inventory-row inventory-header"> 
             <div class="col-qty">nº</div>
             <div class="col-name">Material</div>
         </div>
@@ -453,7 +453,8 @@ function showKitInventory(kitId, parentName, isBack = false) {
         <div class="inventory-table">
             ${headerHTML}
             ${rowsHTML}
-        </div>`;
+        </div>
+    `;
 
     // Renderizamos la lista con un nivel de 4.5 para el historial
     render(contentHTML, kit.name, { level: 4.5, kitId, parentName }, isBack);
@@ -802,6 +803,7 @@ function goToHome() {
     navigationHistory = [];
     renderDashboard();
 }
+
 
 
 
