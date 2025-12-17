@@ -645,11 +645,6 @@ body {
     background-color: #f5dbdb; 
 }
 
-/* Opcional: Asegurarnos de que el encabezado (la primera fila) no se altere */
-.inventory-table .inventory-row:first-child {
-    background: #dda5a5 !important;
-}
-
 /* style.css */
 .kit-indicator {
     /*background-color: #e0e0e0;*/
@@ -838,6 +833,7 @@ body {
 	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     z-index: 10;
 }
+
 
 
 
