@@ -354,11 +354,10 @@ function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
     }
     
     const headerHTML = `
-        <div class="inventory-row inventory-header">
-            <div class="col-qty">nº</div>
-            <div class="col-name">Material</div>
-        </div>
-    `;
+	    <div class="inventory-row inventory-header"> <div class="col-qty">nº</div>
+	        <div class="col-name">Material</div>
+	    </div>
+	`;
 
     // 2. Lógica para renderizar tablas (Modo Secciones o Modo Simple)
     if (hotspot.sections && hotspot.sections.length > 0) {
@@ -446,10 +445,9 @@ function showKitInventory(kitId, parentName, isBack = false) {
     // Renderizamos la lista con un nivel de 4.5 para el historial
     render(`
         <div class="inventory-table">
-            <div class="inventory-row inventory-header">
-		    <div class="col-qty">Cant.</div>
-		    <div class="col-name">Material</div>
-		</div>
+            <div class="inventory-row inventory-header"> <div class="col-qty">Cant.</div>
+                <div class="col-name">Material</div>
+            </div>
             ${rowsHTML}
         </div>
     `, kit.name, { level: 4.5, kitId, parentName }, isBack);
@@ -798,6 +796,7 @@ function goToHome() {
     navigationHistory = [];
     renderDashboard();
 }
+
 
 
 
