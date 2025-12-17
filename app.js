@@ -568,10 +568,9 @@ function generateGlobalTableHTML(filter = '') {
             <div class="col-name" style="padding-left: 20px;">Nombre del Material</div>
         </div>
     `;
-    
-    // Si el filtro está vacío (como al volver atrás), mostrará la lista completa
     const searchTerm = filter.toLowerCase();
 
+    // 1. Obtenemos todos los IDs y filtramos según el buscador
     const filteredIds = Object.keys(FIREBASE_DATA.MATERIALS).filter(id => {
         const m = FIREBASE_DATA.MATERIALS[id];
         const matchNombre = m.name.toLowerCase().includes(searchTerm);
@@ -587,6 +586,14 @@ function generateGlobalTableHTML(filter = '') {
         return matchNombre || matchContenidoKit;
     });
 
+    // 2. ORDENAR ALFABÉTICAMENTE por el campo "name"
+    filteredIds.sort((a, b) => {
+        const nameA = FIREBASE_DATA.MATERIALS[a].name.toLowerCase();
+        const nameB = FIREBASE_DATA.MATERIALS[b].name.toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
+
+    // 3. Renderizar las filas ya ordenadas
     return header + filteredIds.map(id => {
         const m = FIREBASE_DATA.MATERIALS[id];
         const kitIcon = m.is_kit ? '💼 ' : '';
@@ -803,6 +810,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     initializeApp(); 
 });
+
 
 
 
