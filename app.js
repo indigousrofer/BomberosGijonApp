@@ -447,7 +447,7 @@ function showKitInventory(kitId, parentName, isBack = false) {
         <div class="inventory-table">
             <div class="inventory-row" style="background:#f0f0f0; font-weight:bold; cursor:default;">
                 <div class="col-qty">Cant.</div>
-                <div class="col-name">Material dentro de la saca</div>
+                <div class="col-name">Material</div>
             </div>
             ${rowsHTML}
         </div>
@@ -797,6 +797,7 @@ function goToHome() {
     navigationHistory = [];
     renderDashboard();
 }
+
 
 
 
