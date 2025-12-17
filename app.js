@@ -3,7 +3,6 @@ let navigationHistory = [];
 let mesActualCal = new Date().getMonth();
 let añoActualCal = new Date().getFullYear();
 let turnoSeleccionadoCal = 'T2'; // Turno por defecto al abrir
-let lastMaterialSearch = '';
 
 const appContent = document.getElementById('app-content');
 const backButton = document.getElementById('back-button');
@@ -540,25 +539,23 @@ function handleManualOpen(materialId, docName) {
 /// --------------------------------------------- ///
 
 function renderGlobalMaterialList(isBack = false) {
-    // 1. Creamos el buscador y el contenedor de la tabla
-    // Si no estamos volviendo atrás, reseteamos la búsqueda o la mantenemos según prefieras
-    // En este caso, la mantenemos para mejorar la experiencia
+    // Al eliminar 'lastMaterialSearch', el buscador siempre arrancará limpio
     const html = `
-        <div class="search-container" style="margin-bottom: 20px;">
+        <div class="search-container" style="padding: 0 5px; margin-bottom: 20px;">
             <input type="text" id="material-search" 
                    placeholder="🔍 Buscar material o contenido de kits..." 
-                   oninput="lastMaterialSearch = this.value; filterMaterials(this.value)"
-                   value="${lastMaterialSearch}"
+                   oninput="filterMaterials(this.value)"
+                   value=""
                    style="width: 100%; 
                           padding: 12px; 
                           border-radius: 8px; 
                           border: 1px solid #ccc; 
                           font-size: 1.1em; 
-                          box-sizing: border-box; /* 👈 Esto evita que se salga */
+                          box-sizing: border-box; 
                           display: block;">
         </div>
         <div id="global-material-table" class="inventory-table">
-            ${generateGlobalTableHTML(lastMaterialSearch)}
+            ${generateGlobalTableHTML('')}
         </div>
     `;
 
@@ -571,6 +568,8 @@ function generateGlobalTableHTML(filter = '') {
             <div class="col-name" style="padding-left: 20px;">Nombre del Material</div>
         </div>
     `;
+    
+    // Si el filtro está vacío (como al volver atrás), mostrará la lista completa
     const searchTerm = filter.toLowerCase();
 
     const filteredIds = Object.keys(FIREBASE_DATA.MATERIALS).filter(id => {
@@ -804,6 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     initializeApp(); 
 });
+
 
 
 
