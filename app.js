@@ -677,241 +677,85 @@ function showGlobalMaterialDetail(materialId, isBack = false) {
 
     render(content, material.name, { level: 5, materialId: materialId, section: 'material_global' }, isBack); //
 }
-// ----------------------------------------------------
-// LÓGICA DEL CALENDARIO
-// ----------------------------------------------------
 
-/**
- * Lógica matemática de turnos de bomberos - Versión Sin Errores de Horario
- */
+// ----------------------------------------------------
+// LÓGICA DEL CALENDARIO (CORREGIDA CON ISBACK)
+// ----------------------------------------------------
 function calcularTurnoGuardia(fecha) {
-    // 1. Puntos de referencia forzados en UTC para ignorar el Horario de Verano (DST)
     const inicioRef = Date.UTC(2024, 0, 1);
     const fechaUTC = Date.UTC(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
-    
-    // 2. Diferencia de días pura (siempre múltiplo de 24h exactas)
-    const diffMs = fechaUTC - inicioRef;
-    const diasTotal = Math.round(diffMs / (1000 * 60 * 60 * 24));
-
-    // 3. Cálculo del desplazamiento (Salto de Marzo en años no bisiestos)
+    const diasTotal = Math.round((fechaUTC - inicioRef) / (1000 * 60 * 60 * 24));
     let desplazamiento = 0;
-    for (let a = 2024; a < fecha.getFullYear(); a++) {
-        if (!esBisiesto(a)) desplazamiento++;
-    }
-
-    if (!esBisiesto(fecha.getFullYear()) && fecha.getMonth() >= 2) {
-        desplazamiento++;
-    }
-
-    // 4. CÁLCULO FINAL
-    // Sumamos el desplazamiento porque el salto de guardia adelanta la rotación
+    for (let a = 2024; a < fecha.getFullYear(); a++) { if (!esBisiesto(a)) desplazamiento++; }
+    if (!esBisiesto(fecha.getFullYear()) && fecha.getMonth() >= 2) desplazamiento++;
     let ciclo = (diasTotal + desplazamiento + 1) % 5;
-
-    // Asegurar resultado positivo
     if (ciclo < 0) ciclo += 5;
-
-    return ciclo + 1; // Devuelve 1, 2, 3, 4 o 5
+    return ciclo + 1;
 }
 
-function esBisiesto(year) {
-    return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
-}
-
-// --- Reemplaza tus funciones de Calendario en app.js por estas ---
+function esBisiesto(year) { return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0); }
 
 function renderCalendarioSection(isBack = false) {
     const botonesHTML = TURNOS_CONFIG.map(t => `
-        <button class="turno-btn-small" 
-                style="background-color: ${t.color}" 
-                onclick="cambiarTurnoCal('${t.id}')">
-            ${t.id}
-        </button>
+        <button class="turno-btn-small" style="background-color: ${t.color}" onclick="cambiarTurnoCal('${t.id}')">${t.id}</button>
     `).join('');
 
     render(`
-        <div class="calendar-header-compact">
-            <div class="turno-row">${botonesHTML}</div>
+        <div class="calendar-header-compact"><div class="turno-row">${botonesHTML}</div></div>
+        <div class="calendar-nav">
+            <button onclick="navegarMes(-1)">&#10140;</button>
+            <div id="mes-titulo-container" class="select-nav-container"></div>
+            <button onclick="navegarMes(1)">&#10140;</button>
         </div>
-        ...
         <div id="calendar-view-container" class="calendar-view"></div>
     `, 'Calendario de Turnos', { level: 1, section: 'calendario' }, isBack);
-
     actualizarVistaCalendario();
 }
 
 function actualizarVistaCalendario() {
     const container = document.getElementById('calendar-view-container');
     const navContainer = document.getElementById('mes-titulo-container');
-    
     if (!container || !navContainer) return;
 
-    // 1. Buscamos la info del turno seleccionado para obtener su color
     const infoTurno = TURNOS_CONFIG.find(t => t.id === turnoSeleccionadoCal);
-    const colorDinamico = infoTurno ? infoTurno.color : '#AA1915'; // Rojo por defecto si falla
+    const colorDinamico = infoTurno ? infoTurno.color : '#AA1915';
 
-    // 2. GENERAR OPCIONES DE MESES Y AÑOS (para los desplegables)
-    let mesesOptions = '';
-    for (let i = 0; i < 12; i++) {
-        const nombreMes = obtenerNombreMes(i);
-        const seleccionado = (i === mesActualCal) ? 'selected' : '';
-        mesesOptions += `<option value="${i}" ${seleccionado}>${nombreMes}</option>`;
-    }
-
-    const añoMin = añoActualCal - 5;
-    const añoMax = añoActualCal + 5;
-    let añosOptions = '';
-    for (let i = añoMin; i <= añoMax; i++) {
-        const seleccionado = (i === añoActualCal) ? 'selected' : '';
-        añosOptions += `<option value="${i}" ${seleccionado}>${i}</option>`;
-    }
-
-    // 3. INYECTAR EL HTML CON DESPLEGABLES
     navContainer.innerHTML = `
-        <select id="mes-select" onchange="cambiarMesAño(this.value, 'mes')">
-            ${mesesOptions}
-        </select>
-        <select id="año-select" onchange="cambiarMesAño(this.value, 'año')">
-            ${añosOptions}
-        </select>
+        <select onchange="cambiarMesAño(this.value, 'mes')">${Array.from({length:12}, (_,i)=>`<option value="${i}" ${i===mesActualCal?'selected':''}>${obtenerNombreMes(i)}</option>`).join('')}</select>
+        <select onchange="cambiarMesAño(this.value, 'año')">${Array.from({length:11}, (_,i)=>(añoActualCal-5)+i).map(a=>`<option value="${a}" ${a===añoActualCal?'selected':''}>${a}</option>`).join('')}</select>
     `;
 
-    // 4. GENERAR LA TABLA DEL CALENDARIO
-    let tablaHTML = `<table class="tabla-calendario">
-        <thead><tr><th>Lu</th><th>Ma</th><th>Mi</th><th>Ju</th><th>Vi</th><th>Sá</th><th>Do</th></tr></thead>
-        <tbody><tr>`;
-
+    let tablaHTML = `<table class="tabla-calendario"><thead><tr><th>Lu</th><th>Ma</th><th>Mi</th><th>Ju</th><th>Vi</th><th>Sá</th><th>Do</th></tr></thead><tbody><tr>`;
     const diasMes = new Date(añoActualCal, mesActualCal + 1, 0).getDate();
-    let primerDia = new Date(añoActualCal, mesActualCal, 1).getDay();
-    if (primerDia === 0) primerDia = 7; // Ajuste para que Lu sea 1 y Do sea 7
+    let primerDia = new Date(añoActualCal, mesActualCal, 1).getDay() || 7;
 
-    // Rellenar días vacíos al inicio
     for (let i = 1; i < primerDia; i++) tablaHTML += '<td></td>';
-
     for (let dia = 1; dia <= diasMes; dia++) {
         const fecha = new Date(añoActualCal, mesActualCal, dia);
-        const turnoActivo = calcularTurnoGuardia(fecha);
-        const idNumerico = parseInt(turnoSeleccionadoCal.replace('T', ''));
-        
-        const esMiGuardia = (turnoActivo === idNumerico);
-        
-        // Detectar si la celda es HOY para el borde rojo
+        const esMiGuardia = (calcularTurnoGuardia(fecha) === parseInt(turnoSeleccionadoCal.replace('T', '')));
         const hoy = new Date();
         const esHoy = (dia === hoy.getDate() && mesActualCal === hoy.getMonth() && añoActualCal === hoy.getFullYear());
-
-        // Construir estilos dinámicos
-        let estilosCelda = "";
-        if (esMiGuardia) estilosCelda += `background-color:${colorDinamico}; color:white; font-weight:bold;`;
-        if (esHoy) estilosCelda += `border: 3px solid #AA1915 !important; font-weight:900;`; // Resaltado del día actual
-
-        const estiloAtributo = estilosCelda ? `style="${estilosCelda}"` : '';
-
-        tablaHTML += `<td ${estiloAtributo}>${dia}</td>`;
+        let estilo = esMiGuardia ? `background-color:${colorDinamico}; color:white; font-weight:bold;` : '';
+        if (esHoy) estilo += `border: 3px solid #AA1915 !important;`;
+        tablaHTML += `<td style="${estilo}">${dia}</td>`;
         if (fecha.getDay() === 0 && dia !== diasMes) tablaHTML += '</tr><tr>';
     }
-
-    tablaHTML += '</tr></tbody></table>';
-    
-    // 5. Generar el footer con la información de hoy y la leyenda
-    const hoy = new Date();
-    const turnoHoyId = calcularTurnoGuardia(hoy);
-    const infoTurnoHoy = TURNOS_CONFIG.find(t => parseInt(t.id.replace('T','')) === turnoHoyId);
-    
-    const infoExtraHTML = `
-        <div class="calendar-footer">
-            <div class="hoy-badge" style="border-left: 5px solid ${infoTurnoHoy.color}">
-                <strong>HOY:</strong> Guardia del <span>${infoTurnoHoy.name}</span>
-            </div>
-            <div class="leyenda-item">
-                <span class="dot" style="background-color: ${colorDinamico}"></span>
-                Mostrando guardias del <strong>${turnoSeleccionadoCal}</strong>
-            </div>
-        </div>
-    `;
-
-    // 6. Inyectar todo el contenido
-    container.innerHTML = tablaHTML + infoExtraHTML;
+    container.innerHTML = tablaHTML + '</tr></tbody></table>';
 }
 
-function cambiarMesAño(valor, tipo) {
-    if (tipo === 'mes') {
-        mesActualCal = parseInt(valor);
-    } else if (tipo === 'año') {
-        añoActualCal = parseInt(valor);
-    }
-    actualizarVistaCalendario();
-}
-
-// Asegúrate de BORRAR cualquier otra copia de actualizarVistaCalendario que tengas abajo.
-
-function mostrarTurnoEnCalendario(turnoId) {
-    const hoy = new Date();
-    const año = hoy.getFullYear();
-    const mes = hoy.getMonth();
-    const container = document.getElementById('calendar-view-container');
-    
-    let tablaHTML = `
-        <h4 style="text-align:center;">Guardias ${turnoId} - ${obtenerNombreMes(mes)}</h4>
-        <table class="tabla-calendario">
-            <thead>
-                <tr><th>Lu</th><th>Ma</th><th>Mi</th><th>Ju</th><th>Vi</th><th>Sá</th><th>Do</th></tr>
-            </thead>
-            <tbody><tr>`;
-
-    const diasMes = new Date(año, mes + 1, 0).getDate();
-    let primerDia = new Date(año, mes, 1).getDay();
-    if (primerDia === 0) primerDia = 7; // Ajuste para que Lunes sea 1
-
-    // Espacios iniciales
-    for (let i = 1; i < primerDia; i++) tablaHTML += '<td></td>';
-
-    for (let dia = 1; dia <= diasMes; dia++) {
-        const fecha = new Date(añoActualCal, mesActualCal, dia);
-        const turnoActivo = calcularTurnoGuardia(fecha);
-        const idNumerico = parseInt(turnoSeleccionadoCal.replace('T', ''));
-        
-        const esMiGuardia = (turnoActivo === idNumerico);
-        
-        // Eliminamos border-radius:50% y ajustamos el estilo para llenar la celda
-        const estilo = esMiGuardia ? `style="background-color:${colorDinamico}; color:white; font-weight:bold;"` : '';
-
-        tablaHTML += `<td ${estilo}>${dia}</td>`;
-        if (fecha.getDay() === 0 && dia !== diasMes) tablaHTML += '</tr><tr>';
-    }
-
-    tablaHTML += '</tr></tbody></table>';
-    container.innerHTML = tablaHTML;
-}
-
-function obtenerNombreMes(n) {
-    const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-    return meses[n];
-}
-
-function navegarMes(direccion) {
-    mesActualCal += direccion;
-    if (mesActualCal < 0) { mesActualCal = 11; añoActualCal--; }
-    if (mesActualCal > 11) { mesActualCal = 0; añoActualCal++; }
-    actualizarVistaCalendario();
-}
-
-function cambiarTurnoCal(turnoId) {
-    turnoSeleccionadoCal = turnoId;
-    actualizarVistaCalendario();
-}
+function cambiarMesAño(v, t) { if(t==='mes') mesActualCal=parseInt(v); else añoActualCal=parseInt(v); actualizarVistaCalendario(); }
+function navegarMes(d) { mesActualCal+=d; if(mesActualCal<0){mesActualCal=11; añoActualCal--;} if(mesActualCal>11){mesActualCal=0; añoActualCal++;} actualizarVistaCalendario(); }
+function cambiarTurnoCal(id) { turnoSeleccionadoCal=id; actualizarVistaCalendario(); }
+function obtenerNombreMes(n) { return ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"][n]; }
 
 // ----------------------------------------------------
-// LÓGICA DEL BOTÓN VOLVER
+// SISTEMA ÚNICO DE NAVEGACIÓN Y RETROCESO
 // ----------------------------------------------------
-// Función única de retroceso
+
 function handleBackNavigation() {
     if (navigationHistory.length > 1) {
-        // 1. Quitamos el estado actual del array
-        navigationHistory.pop();
-        
-        // 2. Miramos el nuevo "último" estado
+        navigationHistory.pop(); 
         const target = navigationHistory[navigationHistory.length - 1];
-
-        // 3. Ejecutamos la función con isBack = true para NO duplicar historial
         window.scrollTo(0, 0);
         
         if (target.level === 0) renderDashboard(true);
@@ -933,49 +777,24 @@ function handleBackNavigation() {
     }
 }
 
-// Vinculamos el clic del botón físico de la pantalla
-document.getElementById('back-button').addEventListener('click', (e) => {
-    e.preventDefault();
-    // Forzamos al navegador a ir atrás, lo que disparará el 'popstate'
-    history.back(); 
-});
-
-// Este es el ÚNICO lugar donde se ejecuta la lógica de cambio de pantalla al ir atrás
-window.addEventListener('popstate', (event) => {
-    handleBackNavigation();
-});
-
-// Al cargar la primera vez, vamos al Dashboard (Nivel 0)
-document.addEventListener('DOMContentLoaded', () => {
-    renderDashboard();
-});
+// Eventos globales
+backButton.addEventListener('click', (e) => { e.preventDefault(); history.back(); });
+window.addEventListener('popstate', handleBackNavigation);
 
 function goToHome() {
-    // Si ya estamos en el dashboard, no hacemos nada
-    if (navigationHistory.length > 0 && navigationHistory[navigationHistory.length - 1].level === 0) {
-        return;
-    }
-    // Vaciamos el historial para que el botón de atrás desaparezca al renderizar el Dashboard
+    if (navigationHistory.length > 0 && navigationHistory[navigationHistory.length - 1].level === 0) return;
     navigationHistory = [];
     renderDashboard();
 }
 
-// --- ÚNICO CONTROL DE INICIO ---
+// ----------------------------------------------------
+// INICIO DE LA APLICACIÓN
+// ----------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
     const initialState = { level: 0 };
-    // Establecemos el estado base en el navegador
     history.replaceState(initialState, "Bomberos Gijón");
-    // Cargamos los datos de Firebase y luego el Dashboard
     initializeApp(); 
 });
-
-// --- ÚNICO CONTROL DE POPSTATE (BOTÓN ANDROID/NAVEGADOR) ---
-window.addEventListener('popstate', (event) => {
-    // Si el usuario usa el gesto de atrás del sistema, 
-    // ejecutamos nuestra lógica de limpieza de array y renderizado
-    handleBackNavigation();
-});
-
 
 
 
