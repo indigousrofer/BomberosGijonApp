@@ -823,10 +823,11 @@ body {
 /* SOLUCIÓN GARANTIZADA: MÁXIMA ESPECIFICIDAD DEL KIT */
 /* Usamos el mismo selector del conflicto (:first-child) y añadimos la clase del kit. */
 .inventory-table .inventory-row.kit-inventory-header:first-child {
-    background-color: #ffeaa1 !important; /* ¡ESTA REGLA DEBE GANAR! */
+    /* background-color: #ffeaa1 !important; /* ¡ESTA REGLA DEBE GANAR! */ */
     font-weight: bold;
     cursor: default;
 }
+
 
 
 
