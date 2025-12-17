@@ -622,29 +622,22 @@ function showGlobalMaterialDetail(materialId, isBack = false) {
         const hotspotsData = FIREBASE_DATA.DETAILS[vId].hotspots;
         
         Object.keys(hotspotsData).forEach(viewId => {
-            hotspotsData[viewId].forEach((hotspot, hIndex) => { // Añadimos hIndex
+            hotspotsData[viewId].forEach((hotspot, hIndex) => {
                 
                 const revisarLista = (items, nombreLugar) => {
                     items.forEach(item => {
-                        // 1. ¿Es el material directo?
+                        // 1. Material directo
                         if (item.id === materialId) {
                             ubicaciones.push({ 
-                                vName: vehiculo.name, 
-                                vId: vId, 
-                                viewId: viewId, 
-                                hIndex: hIndex, 
-                                armario: nombreLugar 
+                                vName: vehiculo.name, vId: vId, viewId: viewId, hIndex: hIndex, armario: nombreLugar 
                             });
                         }
-                        // 2. ¿Está dentro de un kit?
-                        const materialEnLista = FIREBASE_DATA.MATERIALS[item.id];
-                        if (materialEnLista?.is_kit && materialEnLista.kit_contents?.some(sub => sub.id === materialId)) {
+                        // 2. Dentro de un kit
+                        const mEnLista = FIREBASE_DATA.MATERIALS[item.id];
+                        if (mEnLista?.is_kit && mEnLista.kit_contents?.some(sub => sub.id === materialId)) {
                             ubicaciones.push({ 
-                                vName: vehiculo.name, 
-                                vId: vId, 
-                                viewId: viewId, 
-                                hIndex: hIndex, 
-                                armario: `${nombreLugar} (Dentro de ${materialEnLista.name})` 
+                                vName: vehiculo.name, vId: vId, viewId: viewId, hIndex: hIndex, 
+                                armario: `${nombreLugar} (En ${mEnLista.name})` 
                             });
                         }
                     });
@@ -658,16 +651,16 @@ function showGlobalMaterialDetail(materialId, isBack = false) {
         });
     });
 
-    // Generamos el HTML con el evento onclick para navegar al armario
+    // GENERACIÓN DEL HTML CLICABLE
     ubicacionesHTML = ubicaciones.length > 0 
         ? ubicaciones.map(u => `
             <div class="list-item" 
-                 style="border-left: 5px solid #AA1915; margin-bottom: 8px; padding: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;"
-                 onclick="showArmarioMaterial('${u.vId}', '${u.viewId}', ${u.hIndex})">
-                <div>
-                    <strong>${u.vName}</strong>: ${u.armario}
+                 style="border-left: 5px solid #AA1915; margin-bottom: 8px; padding: 12px; cursor: pointer; background: white;"
+                 onclick="console.log('Navegando a:', '${u.vId}'); showArmarioMaterial('${u.vId}', '${u.viewId}', ${u.hIndex})">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span><strong>${u.vName}</strong>: ${u.armario}</span>
+                    <span style="color: #AA1915; font-weight: bold;">VER ➔</span>
                 </div>
-                <span style="font-size: 1.2em;">📍</span>
             </div>`).join('')
         : '<p>No se han encontrado ubicaciones registradas.</p>';
 
@@ -686,11 +679,12 @@ function showGlobalMaterialDetail(materialId, isBack = false) {
             ${mainPhoto ? `<img src="${mainPhoto.url}" class="material-main-img">` : ''} 
             <div class="material-text">
                 <p><strong>Descripción:</strong></p>
-                <p>${material.description || 'Sin descripción disponible.'}</p>
+                <p>${material.description || 'Sin descripción.'}</p>
             </div>
         </div>
-        <div style="margin-top: 20px; background: #f9f9f9; padding: 15px; border-radius: 8px;">
-            <h3 style="color: #AA1915; margin-top: 0;">📍 Ubicación en Vehículos</h3>
+        <div style="margin-top: 20px;">
+            <h3 style="color: #AA1915; margin-bottom: 10px;">📍 Ubicación en Vehículos</h3>
+            <p style="font-size: 0.85em; color: #666; margin-bottom: 10px;">(Haz clic para ir al camión)</p>
             ${ubicacionesHTML}
         </div>
         <hr>
@@ -698,7 +692,7 @@ function showGlobalMaterialDetail(materialId, isBack = false) {
         ${docsHTML}
     `;
 
-    render(content, material.name, { level: 5, materialId: materialId, section: 'material_global' }, isBack); //
+    render(content, material.name, { level: 5, materialId: materialId, section: 'material_global' }, isBack);
 }
 
 // ----------------------------------------------------
@@ -827,6 +821,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     initializeApp(); 
 });
+
 
 
 
