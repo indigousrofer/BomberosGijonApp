@@ -92,8 +92,9 @@ function navigateToSection(id) {
 
 // --- FUNCIÓN RENDER del mapa ---
 // --- NIVEL 1: SECCIÓN DE MAPA (ACTUALIZADA) ---
-async function renderMapaSection() {
-    render(`<div id="map"></div>`, 'Mapa de Elementos', { level: 1, section: 'mapa' });
+async function renderMapaSection(isBack = false) { // <--- Añadir isBack
+    // Pasamos isBack al render
+    render(`<div id="map"></div>`, 'Mapa de Elementos', { level: 1, section: 'mapa' }, isBack); 
 
     setTimeout(() => {
         const map = L.map('map').setView([43.5322, -5.6611], 14);
@@ -718,7 +719,7 @@ function esBisiesto(year) {
 
 // --- Reemplaza tus funciones de Calendario en app.js por estas ---
 
-function renderCalendarioSection() {
+function renderCalendarioSection(isBack = false) {
     const botonesHTML = TURNOS_CONFIG.map(t => `
         <button class="turno-btn-small" 
                 style="background-color: ${t.color}" 
@@ -731,17 +732,9 @@ function renderCalendarioSection() {
         <div class="calendar-header-compact">
             <div class="turno-row">${botonesHTML}</div>
         </div>
-        
-        <div class="calendar-nav">
-            <button onclick="navegarMes(-1)">&#10140;</button>
-            
-            <div id="mes-titulo-container" class="select-nav-container">
-                </div>
-            
-            <button onclick="navegarMes(1)">&#10140;</button>
-        </div>
+        ...
         <div id="calendar-view-container" class="calendar-view"></div>
-    `, 'Calendario de Turnos', { level: 1, section: 'calendario' });
+    `, 'Calendario de Turnos', { level: 1, section: 'calendario' }, isBack);
 
     actualizarVistaCalendario();
 }
@@ -967,25 +960,22 @@ function goToHome() {
     renderDashboard();
 }
 
-// --- INTERCEPTAR BOTÓN ATRÁS DE ANDROID ---
-window.addEventListener('popstate', (event) => {
-    // Si hay historial en nuestra app, ejecutamos nuestra lógica de atrás
-    if (navigationHistory.length > 1) {
-        // Forzamos el clic en nuestro botón físico de la app
-        // para reutilizar toda la lógica que ya tienes escrita
-        backButton.click();
-    } else {
-        // Si estamos en el Home (Nivel 0), no hacemos nada o dejamos que salga
-        // Para evitar que salga, podríamos poner un pushState vacío aquí
-    }
+// --- ÚNICO CONTROL DE INICIO ---
+document.addEventListener('DOMContentLoaded', () => {
+    const initialState = { level: 0 };
+    // Establecemos el estado base en el navegador
+    history.replaceState(initialState, "Bomberos Gijón");
+    // Cargamos los datos de Firebase y luego el Dashboard
+    initializeApp(); 
 });
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Al cargar, establecemos el estado inicial para que Android sepa que ya hay una "página"
-    const initialState = { level: 0 };
-    history.replaceState(initialState, "Bomberos Gijón");
-    renderDashboard();
+// --- ÚNICO CONTROL DE POPSTATE (BOTÓN ANDROID/NAVEGADOR) ---
+window.addEventListener('popstate', (event) => {
+    // Si el usuario usa el gesto de atrás del sistema, 
+    // ejecutamos nuestra lógica de limpieza de array y renderizado
+    handleBackNavigation();
 });
+
 
 
 
