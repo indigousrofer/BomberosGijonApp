@@ -374,7 +374,7 @@ function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
 	
 	} else if (hotspot.inventory && hotspot.inventory.length > 0) {
         // ---------------------------------------------
-        // B) MODO SIMPLE (CÓDIGO ANTIGUO)
+        // B) MODO SIMPLE
         // La lógica que itera sobre hotspot.inventory (lista única)
         // ---------------------------------------------
         
@@ -405,7 +405,7 @@ function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
 	
 	    render(`
 	        <div class="inventory-table">
-	            <div class="inventory-row" style="background:#f0f0f0; font-weight:bold; cursor:default;">
+	            <div class="inventory-row inventory-header">
 	                <div class="col-qty">nº</div>
 	                <div class="col-name">Material</div>
 	            </div>
@@ -796,6 +796,7 @@ function goToHome() {
     navigationHistory = [];
     renderDashboard();
 }
+
 
 
 
