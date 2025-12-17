@@ -1,4 +1,8 @@
 /* Estilos Generales para Usabilidad */
+* {
+    box-sizing: border-box;
+}
+
 body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -864,6 +868,7 @@ body {
 .kit-row .col-qty, .kit-row .col-name {
     color: #000 !important;
 }
+
 
 
 
