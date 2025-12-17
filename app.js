@@ -427,39 +427,36 @@ function showKitInventory(kitId, parentName, isBack = false) {
         return;
     }
 
-	const headerHTML = `
-	    <div class="inventory-row inventory-header"> <div class="col-qty">nº</div>
-	        <div class="col-name">Material</div>
-	    </div>
+    const headerHTML = `
+        <div class="inventory-row inventory-header">
+            <div class="col-qty">nº</div>
+            <div class="col-name">Material</div>
+        </div>
+    `;
+
     const rowsHTML = kit.kit_contents.map(item => {
         const material = FIREBASE_DATA.MATERIALS[item.id];
+        if (!material) return `<div class="inventory-row" style="color:red; padding:10px;">ID ${item.id} no encontrado</div>`;
         
         // El contenido del kit SIEMPRE va al Nivel 5 (detalles del material)
         const clickAction = `showMaterialDetails('${item.id}')`;
-        const indicator = '';
 
         return `
             <div class="inventory-row" onclick="${clickAction}">
                 <div class="col-qty">${item.qty}</div>
-                <div class="col-name">${material.name} ${indicator}</div>
+                <div class="col-name">${material.name}</div>
             </div>
         `;
     }).join('');
 
-	contentHTML += `
-            <div class="inventory-table">
-                ${headerHTML}${rowsHTML}
-            </div>`;
-    // Renderizamos la lista con un nivel de 4.5 para el historial
-    /*render(`
+    const contentHTML = `
         <div class="inventory-table">
-            <div class="inventory-row inventory-header"> <div class="col-qty">Cant.</div>
-                <div class="col-name">Material</div>
-            </div>
+            ${headerHTML}
             ${rowsHTML}
-        </div>
-    `, kit.name, { level: 4.5, kitId, parentName }, isBack);*/
-	render(contentHTML, hotspot.name, { level: 4, vehicleId, viewId, hotspotIndex }, isBack);
+        </div>`;
+
+    // Renderizamos la lista con un nivel de 4.5 para el historial
+    render(contentHTML, kit.name, { level: 4.5, kitId, parentName }, isBack);
 }
 
 // --- NIVEL 5: Detalles del Material (Navega al Nivel 6) ---
@@ -805,6 +802,7 @@ function goToHome() {
     navigationHistory = [];
     renderDashboard();
 }
+
 
 
 
