@@ -393,8 +393,10 @@ function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
 	            ? '<span class="kit-indicator">(Ver contenido)</span>' 
 	            : '';
 	
+	        const rowClass = isKit ? 'inventory-row kit-row' : 'inventory-row';
+            
 	        return `
-	            <div class="inventory-row" onclick="${clickAction}">
+	            <div class="${rowClass}" onclick="${clickAction}"> <--- AÑADIDA CLASE
 	                <div class="col-qty">${item.qty}</div>
 	                <div class="col-name">${material.name} ${indicator}</div>
 	            </div>
@@ -795,6 +797,7 @@ function goToHome() {
     navigationHistory = [];
     renderDashboard();
 }
+
 
 
 
