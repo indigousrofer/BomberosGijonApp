@@ -445,9 +445,8 @@ function showKitInventory(kitId, parentName, isBack = false) {
     // Renderizamos la lista con un nivel de 4.5 para el historial
     render(`
         <div class="inventory-table">
-            <div class="inventory-row" style="background:#ffeaa1; font-weight:bold; cursor:default;">
-                <div class="col-qty">Cant.</div>
-                <div class="col-name">Material</div>
+            <div class="inventory-row kit-inventory-header"> <div class="col-qty">Cant.</div>
+                <div class="col-name">Contenido del Kit</div>
             </div>
             ${rowsHTML}
         </div>
@@ -797,6 +796,7 @@ function goToHome() {
     navigationHistory = [];
     renderDashboard();
 }
+
 
 
 
