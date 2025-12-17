@@ -84,7 +84,7 @@ async function loadFirebaseData() {
 
 function navigateToSection(id) {
     if (id === 'inventario') renderVehiclesList(); // ID de data.js
-	if (id === 'material') renderGlobalMaterialList();       // ID de data.js
+	if (id === 'material_global') renderGlobalMaterialList();       // ID de data.js
     if (id === 'mapa') renderMapaSection();       // ID de data.js
     if (id === 'calendario') renderCalendarioSection(); // ID de data.js
 }
@@ -598,27 +598,19 @@ function filterMaterials(text) {
 
 function showGlobalMaterialDetail(materialId, isBack = false) {
     const material = FIREBASE_DATA.MATERIALS[materialId];
-    
-    // --- LÓGICA DE BÚSQUEDA DE UBICACIONES ---
+    if (!material) return;
+
+    // 1. Lógica de búsqueda de ubicaciones (tu código actual)
     let ubicacionesHTML = '';
     const ubicaciones = [];
-
-    // Recorremos cada vehículo
     Object.keys(FIREBASE_DATA.DETAILS).forEach(vId => {
         const vehiculo = FIREBASE_DATA.VEHICLES.find(v => v.id === vId);
         const hotspotsData = FIREBASE_DATA.DETAILS[vId].hotspots;
-
-        // Recorremos cada vista (izda, dcha, etc)
         Object.keys(hotspotsData).forEach(viewId => {
-            // Recorremos cada armario/hotspot
             hotspotsData[viewId].forEach(hotspot => {
-                
-                // Comprobamos en inventario simple
                 if (hotspot.inventory && hotspot.inventory.some(i => i.id === materialId)) {
                     ubicaciones.push({ vehiculo: vehiculo.name, armario: hotspot.name });
                 }
-                
-                // Comprobamos en secciones
                 if (hotspot.sections) {
                     hotspot.sections.forEach(sec => {
                         if (sec.items.some(i => i.id === materialId)) {
@@ -630,18 +622,19 @@ function showGlobalMaterialDetail(materialId, isBack = false) {
         });
     });
 
-    if (ubicaciones.length > 0) {
-        ubicacionesHTML = ubicaciones.map(u => `
-            <div class="list-item" style="border-left: 5px solid #AA1915; margin-bottom: 5px; padding: 10px;">
-                <strong>${u.vehiculo}</strong>: ${u.armario}
-            </div>
-        `).join('');
-    } else {
-        ubicacionesHTML = '<p>No se han encontrado ubicaciones registradas.</p>';
-    }
+    ubicacionesHTML = ubicaciones.length > 0 
+        ? ubicaciones.map(u => `<div class="list-item" style="border-left: 5px solid #AA1915; margin-bottom: 5px; padding: 10px;"><strong>${u.vehiculo}</strong>: ${u.armario}</div>`).join('')
+        : '<p>No se han encontrado ubicaciones registradas.</p>';
 
-    // Reutilizamos parte de tu lógica de detalles pero añadiendo las ubicaciones
+    // 2. Lógica de Documentos (Recuperada de tu showMaterialDetails original)
     const mainPhoto = material.docs ? material.docs.find(doc => doc.type === 'photo') : null;
+    const filteredDocs = material.docs ? material.docs.filter(doc => doc !== mainPhoto) : [];
+
+    const docsHTML = filteredDocs.map(doc => `
+        <div class="list-item" onclick="renderResource('${materialId}', '${doc.url}', '${doc.type}', '${doc.name}')">
+            <strong>${doc.type === 'video' || doc.type === 'video_mp4' ? '🎬' : '🖼️'} Ver ${doc.name}</strong>
+        </div>
+    `).join('');
 
     const content = `
         <div class="material-detail-container">
@@ -657,12 +650,11 @@ function showGlobalMaterialDetail(materialId, isBack = false) {
         </div>
         <hr>
         <h3>Documentación y Recursos</h3>
-        <p>(Aquí iría tu lógica actual de documentos del Nivel 5)</p>
+        ${docsHTML}
     `;
 
-    render(content, material.name, { level: 5, materialId, section: 'material_global' }, isBack);
+    render(content, material.name, { level: 5, materialId, section: 'material_global' }, isBack); //
 }
-
 // ----------------------------------------------------
 // LÓGICA DEL CALENDARIO
 // ----------------------------------------------------
@@ -948,6 +940,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     renderDashboard();
 });
+
 
 
 
