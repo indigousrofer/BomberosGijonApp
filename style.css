@@ -804,13 +804,6 @@ body {
     font-weight: 600;
 }
 
-/* Encabezado de la tabla */
-.inventory-header {
-    background: #e0e0e0 !important;
-    font-weight: bold;
-    cursor: default;
-}
-
 /* Estilo para los kits (Fondo ligeramente más oscuro y negrita) */
 .kit-row {
     background-color: #ffeaa1 !important; /* Tono amarillo */
@@ -836,12 +829,14 @@ body {
     display: block;
     margin: 0 auto;
 }
-/* SOLUCIÓN RADICAL PARA NEGRITA EN KITS */
-.inventory-table .kit-inventory-header div.col-qty,
-.inventory-table .kit-inventory-header div.col-name {
-    font-weight: 900 !important; /* Usamos 900 para forzar el máximo grosor */
-    color: #000000 !important;  /* Forzamos negro puro para aumentar contraste */
+
+/* Limpiamos y dejamos solo la regla de estructura */
+.kit-inventory-header {
+    display: flex !important;
+    align-items: center !important;
+    cursor: default !important;
 }
+
 
 
 
