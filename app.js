@@ -561,7 +561,13 @@ function renderGlobalMaterialList(isBack = false) {
                    placeholder="🔍 Buscar material o contenido de kits..." 
                    oninput="lastMaterialSearch = this.value; filterMaterials(this.value)"
                    value="${lastMaterialSearch}"
-                   style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1.1em;">
+                   style="width: 100%; 
+                          padding: 12px; 
+                          border-radius: 8px; 
+                          border: 1px solid #ccc; 
+                          font-size: 1.1em; 
+                          box-sizing: border-box; /* 👈 Esto evita que se salga */
+                          display: block;">
         </div>
         <div id="global-material-table" class="inventory-table">
             ${generateGlobalTableHTML(lastMaterialSearch)}
@@ -1003,6 +1009,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     renderDashboard();
 });
+
 
 
 
