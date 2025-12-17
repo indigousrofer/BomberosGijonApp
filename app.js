@@ -84,6 +84,7 @@ async function loadFirebaseData() {
 
 function navigateToSection(id) {
     if (id === 'inventario') renderVehiclesList(); // ID de data.js
+	if (id === 'material') renderGlobalMaterialList();       // ID de data.js
     if (id === 'mapa') renderMapaSection();       // ID de data.js
     if (id === 'calendario') renderCalendarioSection(); // ID de data.js
 }
@@ -505,8 +506,8 @@ function showMaterialDetails(materialId, isBack = false) {
     `, material.name, { level: 5, materialId }, isBack);
 }
 
-// --- NIVEL 6: Renderizado de Recurso a Pantalla Completa ---
-// --- NIVEL 6: Renderizado de Recurso a Pantalla Completa (Fotos y Vídeos) ---
+/// --- NIVEL 6: Renderizado de Recurso a Pantalla Completa -- ///
+/// ---------------------------------------------------------- ///
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     let content = '';
 
@@ -544,6 +545,122 @@ function handleManualOpen(materialId, docName) {
 
     // 2. Si el usuario vuelve a la app y pulsa el botón "Atrás" (de la app):
     // La función backButton.addEventListener debe manejarlo.
+}
+
+// --- SECCIÓN 2: BUSCADOR GLOBAL DE MATERIAL --- ///
+/// --------------------------------------------- ///
+
+function renderGlobalMaterialList(isBack = false) {
+    // 1. Creamos el buscador y el contenedor de la tabla
+    const html = `
+        <div class="search-container" style="margin-bottom: 20px;">
+            <input type="text" id="material-search" placeholder="🔍 Buscar material (ej: Motosierra)..." 
+                   oninput="filterMaterials(this.value)"
+                   style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1.1em;">
+        </div>
+        <div id="global-material-table" class="inventory-table">
+            ${generateGlobalTableHTML()}
+        </div>
+    `;
+
+    render(html, 'BUSCADOR MATERIAL', { level: 1, section: 'material_global' }, isBack);
+}
+
+function generateGlobalTableHTML(filter = '') {
+    const header = `
+        <div class="inventory-row inventory-header">
+            <div class="col-name" style="padding-left: 20px;">Nombre del Material</div>
+        </div>
+    `;
+
+    // Filtramos los materiales basándonos en el texto introducido
+    const filteredIds = Object.keys(FIREBASE_DATA.MATERIALS).filter(id => {
+        const m = FIREBASE_DATA.MATERIALS[id];
+        return m.name.toLowerCase().includes(filter.toLowerCase());
+    });
+
+    const rows = filteredIds.map(id => {
+        const m = FIREBASE_DATA.MATERIALS[id];
+        return `
+            <div class="inventory-row" onclick="showGlobalMaterialDetail('${id}')">
+                <div class="col-name" style="padding-left: 20px;">${m.name}</div>
+            </div>
+        `;
+    }).join('');
+
+    return header + rows;
+}
+
+function filterMaterials(text) {
+    const table = document.getElementById('global-material-table');
+    table.innerHTML = generateGlobalTableHTML(text);
+}
+
+function showGlobalMaterialDetail(materialId, isBack = false) {
+    const material = FIREBASE_DATA.MATERIALS[materialId];
+    
+    // --- LÓGICA DE BÚSQUEDA DE UBICACIONES ---
+    let ubicacionesHTML = '';
+    const ubicaciones = [];
+
+    // Recorremos cada vehículo
+    Object.keys(FIREBASE_DATA.DETAILS).forEach(vId => {
+        const vehiculo = FIREBASE_DATA.VEHICLES.find(v => v.id === vId);
+        const hotspotsData = FIREBASE_DATA.DETAILS[vId].hotspots;
+
+        // Recorremos cada vista (izda, dcha, etc)
+        Object.keys(hotspotsData).forEach(viewId => {
+            // Recorremos cada armario/hotspot
+            hotspotsData[viewId].forEach(hotspot => {
+                
+                // Comprobamos en inventario simple
+                if (hotspot.inventory && hotspot.inventory.some(i => i.id === materialId)) {
+                    ubicaciones.push({ vehiculo: vehiculo.name, armario: hotspot.name });
+                }
+                
+                // Comprobamos en secciones
+                if (hotspot.sections) {
+                    hotspot.sections.forEach(sec => {
+                        if (sec.items.some(i => i.id === materialId)) {
+                            ubicaciones.push({ vehiculo: vehiculo.name, armario: `${hotspot.name} (${sec.name})` });
+                        }
+                    });
+                }
+            });
+        });
+    });
+
+    if (ubicaciones.length > 0) {
+        ubicacionesHTML = ubicaciones.map(u => `
+            <div class="list-item" style="border-left: 5px solid #AA1915; margin-bottom: 5px; padding: 10px;">
+                <strong>${u.vehiculo}</strong>: ${u.armario}
+            </div>
+        `).join('');
+    } else {
+        ubicacionesHTML = '<p>No se han encontrado ubicaciones registradas.</p>';
+    }
+
+    // Reutilizamos parte de tu lógica de detalles pero añadiendo las ubicaciones
+    const mainPhoto = material.docs ? material.docs.find(doc => doc.type === 'photo') : null;
+
+    const content = `
+        <div class="material-detail-container">
+            ${mainPhoto ? `<img src="${mainPhoto.url}" class="material-main-img">` : ''} 
+            <div class="material-text">
+                <p><strong>Descripción:</strong></p>
+                <p>${material.description || 'Sin descripción disponible.'}</p>
+            </div>
+        </div>
+        <div style="margin-top: 20px; background: #f9f9f9; padding: 15px; border-radius: 8px;">
+            <h3 style="color: #AA1915; margin-top: 0;">📍 Ubicación en Vehículos</h3>
+            ${ubicacionesHTML}
+        </div>
+        <hr>
+        <h3>Documentación y Recursos</h3>
+        <p>(Aquí iría tu lógica actual de documentos del Nivel 5)</p>
+    `;
+
+    render(content, material.name, { level: 5, materialId, section: 'material_global' }, isBack);
 }
 
 // ----------------------------------------------------
@@ -831,6 +948,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     renderDashboard();
 });
+
 
 
 
