@@ -333,107 +333,90 @@ function showViewHotspots(vehicleId, viewId, isBack = false) {
 }
 
 // ----------------------------------------------------
-// Nivel 4: Lista de Material (Encabezado eliminado)
+// Nivel 4: Lista de Material (Soporta Secciones y Modo Simple)
 // ----------------------------------------------------
+
+// [Asegúrate de que la función auxiliar generateInventoryRows esté definida ANTES o encima]
+
 function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
     const detail = FIREBASE_DATA.DETAILS[vehicleId];
     const hotspot = detail.hotspots[viewId][hotspotIndex];
+    
+    let contentHTML = ''; 
 
-	// -----------------------------------------------------------------
-    // PASO CLAVE: Verificación de la estructura
-    // -----------------------------------------------------------------
-
-	if (hotspot.sections && hotspot.sections.length > 0) {
-		// ---------------------------------------------
-        // A) MODO SECCIONES (NUEVO CÓDIGO)
-        // La lógica que itera sobre hotspot.sections (Estantería Superior, Central, etc.)
-        // ---------------------------------------------
-		const tablesHTML = hotspot.sections.map(section => {
-        
-        	// Generar las filas de la tabla para CADA SECCIÓN
-	        const rowsHTML = section.items.map(item => {
-	            const material = FIREBASE_DATA.MATERIALS[item.id];
-	            
-	            if (!material) return `<div class="inventory-row" style="color:red; padding:10px;">ID ${item.id} no encontrado</div>`;
-	            
-	            const isKit = material.is_kit;
-	            const clickAction = isKit 
-	                ? `showKitInventory('${item.id}', '${hotspot.name}')`
-	                : `showMaterialDetails('${item.id}')`;              
-	            
-	            const indicator = isKit ? '<span class="kit-indicator">(Ver contenido)</span>' : '';
-	            
-	            // 2. APLICAR ESTILO AL KIT (Fondo gris oscuro y negrita)
-	            const rowClass = isKit ? 'inventory-row kit-row' : 'inventory-row';
-	
-	            return `
-	                <div class="${rowClass}" onclick="${clickAction}">
-	                    <div class="col-qty">${item.qty}</div>
-	                    <div class="col-name">${material.name} ${indicator}</div>
-	                </div>
-	            `;
-	        }).join('');
-	        
-	        // Devolvemos una tabla completa por cada sección
-	        return `
-	            <div class="inventory-table-container">
-	                <h4 class="inventory-section-title">${section.name}</h4>
-	                <div class="inventory-table">
-	                    <div class="inventory-row inventory-header">
-	                        <div class="col-qty">nº</div>
-	                        <div class="col-name">Material</div>
-	                    </div>
-	                    ${rowsHTML}
-	                </div>
-	            </div>
-	        `;
-	    }).join('');
-		render(`<div class="inventory-sections-wrapper">${tablesHTML}</div>`, hotspot.name, { level: 4, vehicleId, viewId, hotspotIndex }, isBack);
-	
-	} else if (hotspot.inventory && hotspot.inventory.length > 0) {
-        // ---------------------------------------------
-        // B) MODO SIMPLE
-        // La lógica que itera sobre hotspot.inventory (lista única)
-        // ---------------------------------------------
-        
-        // Simplemente mapeamos hotspot.inventory directamente:
-        const rowsHTML = hotspot.inventory.map(item => {
-	        const material = FIREBASE_DATA.MATERIALS[item.id];
-	        
-	        if (!material) return `<div class="inventory-row" style="color:red; padding:10px;">ID ${item.id} no encontrado</div>`;
-	
-	        const isKit = material.is_kit;
-	        const clickAction = isKit 
-	            ? `showKitInventory('${item.id}', '${hotspot.name}')` // Va al Nivel 5bis
-	            : `showMaterialDetails('${item.id}')`;              // Va al Nivel 5
-	        
-	        const indicator = isKit 
-	            ? '<span class="kit-indicator">(Ver contenido)</span>' 
-	            : '';
-	
-	        const rowClass = isKit ? 'inventory-row kit-row' : 'inventory-row';
-            
-	        return `
-	            <div class="${rowClass}" onclick="${clickAction}"> <--- AÑADIDA CLASE
-	                <div class="col-qty">${item.qty}</div>
-	                <div class="col-name">${material.name} ${indicator}</div>
-	            </div>
-	        `;
-	    }).join('');
-	
-	    render(`
-	        <div class="inventory-table">
-	            <div class="inventory-row inventory-header">
-	                <div class="col-qty">nº</div>
-	                <div class="col-name">Material</div>
-	            </div>
-	            ${rowsHTML}
-	        </div>
-	    `, hotspot.name, { level: 4, vehicleId, viewId, hotspotIndex }, isBack);
-	} else {
-        // No tiene ni secciones ni inventario
-        render(`<div style="text-align:center; padding:20px;"><p>Armario vacío. No hay material definido.</p></div>`, hotspot.name, { level: 4, vehicleId, viewId, hotspotIndex }, isBack);
+    // 1. Mostrar Imagen del Armario (si existe en Firebase)
+    if (hotspot.armario_image) {
+        contentHTML += `
+            <div class="armario-image-container">
+                <img src="${hotspot.armario_image}" alt="Imagen del armario ${hotspot.name}" class="armario-image">
+            </div>
+        `;
     }
+    
+    const headerHTML = `
+        <div class="inventory-row inventory-header">
+            <div class="col-qty">nº</div>
+            <div class="col-name">Material</div>
+        </div>
+    `;
+
+    // 2. Lógica para renderizar tablas (Modo Secciones o Modo Simple)
+    if (hotspot.sections && hotspot.sections.length > 0) {
+        // --- A) MODO SECCIONES ---
+        const tablesHTML = hotspot.sections.map(section => {
+            const rowsHTML = section.items.map(item => {
+                const material = FIREBASE_DATA.MATERIALS[item.id];
+                if (!material) return `<div class="inventory-row" style="color:red; padding:10px;">ID ${item.id} no encontrado</div>`;
+                
+                const isKit = material.is_kit;
+                const clickAction = isKit ? `showKitInventory('${item.id}', '${hotspot.name}')` : `showMaterialDetails('${item.id}')`;
+                const indicator = isKit ? '<span class="kit-indicator">(Ver contenido)</span>' : '';
+                const rowClass = isKit ? 'inventory-row kit-row' : 'inventory-row';
+
+                return `
+                    <div class="${rowClass}" onclick="${clickAction}">
+                        <div class="col-qty">${item.qty}</div>
+                        <div class="col-name">${material.name} ${indicator}</div>
+                    </div>`;
+            }).join('');
+            
+            return `
+                <div class="inventory-table-container">
+                    <h4 class="inventory-section-title">${section.name}</h4>
+                    <div class="inventory-table">
+                        ${headerHTML}${rowsHTML}
+                    </div>
+                </div>`;
+        }).join('');
+        contentHTML += `<div class="inventory-sections-wrapper">${tablesHTML}</div>`;
+	
+    } else if (hotspot.inventory && hotspot.inventory.length > 0) {
+        // --- B) MODO SIMPLE ---
+        const rowsHTML = hotspot.inventory.map(item => {
+            const material = FIREBASE_DATA.MATERIALS[item.id];
+            if (!material) return `<div class="inventory-row" style="color:red; padding:10px;">ID ${item.id} no encontrado</div>`;
+            
+            const isKit = material.is_kit;
+            const clickAction = isKit ? `showKitInventory('${item.id}', '${hotspot.name}')` : `showMaterialDetails('${item.id}')`;
+            const indicator = isKit ? '<span class="kit-indicator">(Ver contenido)</span>' : '';
+            const rowClass = isKit ? 'inventory-row kit-row' : 'inventory-row';
+
+            return `
+                <div class="${rowClass}" onclick="${clickAction}">
+                    <div class="col-qty">${item.qty}</div>
+                    <div class="col-name">${material.name} ${indicator}</div>
+                </div>`;
+        }).join('');
+	
+        contentHTML += `
+            <div class="inventory-table">
+                ${headerHTML}${rowsHTML}
+            </div>`;
+    } else {
+        contentHTML += `<div style="text-align:center; padding:20px;"><p>Armario vacío.</p></div>`;
+    }
+    
+    render(contentHTML, hotspot.name, { level: 4, vehicleId, viewId, hotspotIndex }, isBack);
 }
 
 // --- NIVEL 4 bis: Muestra una lista de material dentro de una caja, saca u otro contenedor ---
@@ -815,6 +798,7 @@ function goToHome() {
     navigationHistory = [];
     renderDashboard();
 }
+
 
 
 
