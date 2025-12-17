@@ -447,8 +447,8 @@ function showKitInventory(kitId, parentName, isBack = false) {
     render(`
         <div class="inventory-table">
             <div class="inventory-row kit-inventory-header">
-                <div class="col-qty">Cant.</div>
-                <div class="col-name">Material</div>
+                <div class="col-qty"><strong>Cant.</strong></div>
+                <div class="col-name"><strong>Material</strong></div>
             </div>
             ${rowsHTML}
         </div>
@@ -798,6 +798,7 @@ function goToHome() {
     navigationHistory = [];
     renderDashboard();
 }
+
 
 
 
