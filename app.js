@@ -550,16 +550,22 @@ function handleManualOpen(materialId, docName) {
 // --- SECCIÓN 2: BUSCADOR GLOBAL DE MATERIAL --- ///
 /// --------------------------------------------- ///
 
+let lastMaterialSearch = '';
+
 function renderGlobalMaterialList(isBack = false) {
     // 1. Creamos el buscador y el contenedor de la tabla
+    // Si no estamos volviendo atrás, reseteamos la búsqueda o la mantenemos según prefieras
+    // En este caso, la mantenemos para mejorar la experiencia
     const html = `
         <div class="search-container" style="margin-bottom: 20px;">
-            <input type="text" id="material-search" placeholder="🔍 Buscar material (ej: Motosierra)..." 
-                   oninput="filterMaterials(this.value)"
+            <input type="text" id="material-search" 
+                   placeholder="🔍 Buscar material o contenido de kits..." 
+                   oninput="lastMaterialSearch = this.value; filterMaterials(this.value)"
+                   value="${lastMaterialSearch}"
                    style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1.1em;">
         </div>
         <div id="global-material-table" class="inventory-table">
-            ${generateGlobalTableHTML()}
+            ${generateGlobalTableHTML(lastMaterialSearch)}
         </div>
     `;
 
@@ -573,17 +579,35 @@ function generateGlobalTableHTML(filter = '') {
         </div>
     `;
 
-    // Filtramos los materiales basándonos en el texto introducido
+    const searchTerm = filter.toLowerCase();
+
+    // FILTRO PROFUNDO: Busca en nombre del material O en el contenido de sus kits
     const filteredIds = Object.keys(FIREBASE_DATA.MATERIALS).filter(id => {
         const m = FIREBASE_DATA.MATERIALS[id];
-        return m.name.toLowerCase().includes(filter.toLowerCase());
+        const matchNombre = m.name.toLowerCase().includes(searchTerm);
+        
+        // Si no coincide el nombre, miramos si el término está dentro del kit
+        let matchContenidoKit = false;
+        if (m.is_kit && m.kit_contents) {
+            matchContenidoKit = m.kit_contents.some(item => {
+                const subMaterial = FIREBASE_DATA.MATERIALS[item.id];
+                return subMaterial && subMaterial.name.toLowerCase().includes(searchTerm);
+            });
+        }
+        
+        return matchNombre || matchContenidoKit;
     });
 
     const rows = filteredIds.map(id => {
         const m = FIREBASE_DATA.MATERIALS[id];
+        const kitIcon = m.is_kit ? '💼 ' : '';
+        const kitLabel = m.is_kit ? ' <span class="kit-indicator">(Kit)</span>' : '';
+        
         return `
             <div class="inventory-row" onclick="showGlobalMaterialDetail('${id}')">
-                <div class="col-name" style="padding-left: 20px;">${m.name}</div>
+                <div class="col-name" style="padding-left: 20px;">
+                    ${kitIcon}${m.name}${kitLabel}
+                </div>
             </div>
         `;
     }).join('');
@@ -607,18 +631,33 @@ function showGlobalMaterialDetail(materialId, isBack = false) {
         const vehiculo = FIREBASE_DATA.VEHICLES.find(v => v.id === vId);
         const hotspotsData = FIREBASE_DATA.DETAILS[vId].hotspots;
         Object.keys(hotspotsData).forEach(viewId => {
+			// Recorremos cada armario/hotspot
             hotspotsData[viewId].forEach(hotspot => {
-                if (hotspot.inventory && hotspot.inventory.some(i => i.id === materialId)) {
-                    ubicaciones.push({ vehiculo: vehiculo.name, armario: hotspot.name });
-                }
-                if (hotspot.sections) {
-                    hotspot.sections.forEach(sec => {
-                        if (sec.items.some(i => i.id === materialId)) {
-                            ubicaciones.push({ vehiculo: vehiculo.name, armario: `${hotspot.name} (${sec.name})` });
-                        }
-                    });
-                }
-            });
+			    // Función auxiliar para revisar una lista de items (simple o secciones)
+			    const revisarLista = (items, nombreLugar) => {
+			        items.forEach(item => {
+			            // 1. ¿Es el material directo?
+			            if (item.id === materialId) {
+			                ubicaciones.push({ vehiculo: vehiculo.name, armario: nombreLugar });
+			            }
+			            // 2. ¿Está dentro de un kit que está en este lugar?
+			            const materialEnLista = FIREBASE_DATA.MATERIALS[item.id];
+			            if (materialEnLista && materialEnLista.is_kit && materialEnLista.kit_contents) {
+			                if (materialEnLista.kit_contents.some(sub => sub.id === materialId)) {
+			                    ubicaciones.push({ 
+			                        vehiculo: vehiculo.name, 
+			                        armario: `${nombreLugar} -> Dentro de ${materialEnLista.name}` 
+			                    });
+			                }
+			            }
+			        });
+			    };
+			
+			    if (hotspot.inventory) revisarLista(hotspot.inventory, hotspot.name);
+			    if (hotspot.sections) {
+			        hotspot.sections.forEach(sec => revisarLista(sec.items, `${hotspot.name} (${sec.name})`));
+			    }
+			});
         });
     });
 
@@ -896,7 +935,19 @@ backButton.addEventListener('click', () => {
         const target = navigationHistory[navigationHistory.length - 1]; 
         
 		if (target.level === 0) renderDashboard(true); // Nuevo retroceso al 0
-        if (target.level === 1) renderVehiclesList(true);
+        if (target.level === 1) {
+		    // Si venimos del buscador global, volvemos al buscador
+		    if (target.section === 'material_global') {
+		        renderGlobalMaterialList(true);
+		    } else if (target.section === 'calendario') {
+		        renderCalendarioSection();
+		    } else if (target.section === 'mapa') {
+		        renderMapaSection();
+		    } else {
+		        // Por defecto, nivel 1 de inventario
+		        renderVehiclesList(true);
+		    }
+		}
         if (target.level === 2) showVehicleViews(target.vehicleId, true);
         if (target.level === 3) showViewHotspots(target.vehicleId, target.viewId, true);
         if (target.level === 4) showArmarioMaterial(target.vehicleId, target.viewId, target.hotspotIndex, true);
@@ -940,6 +991,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     renderDashboard();
 });
+
 
 
 
