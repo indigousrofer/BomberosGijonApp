@@ -837,6 +837,19 @@ body {
     margin: 0 auto;
 }
 
+/* Forzar negrita en todas las columnas de la cabecera del kit */
+.inventory-table .kit-inventory-header .col-qty,
+.inventory-table .kit-inventory-header .col-name {
+    font-weight: bold !important;
+    color: #333; /* Opcional: un color oscuro para que resalte más */
+}
+
+/* Estilo garantizado para la cabecera amarilla del kit */
+.inventory-table .inventory-row.kit-inventory-header:first-child {
+    background-color: #ffeaa1 !important;
+    display: flex;
+    align-items: center;
+}
 
 
 
