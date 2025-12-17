@@ -679,7 +679,7 @@ function showGlobalMaterialDetail(materialId, isBack = false) {
 }
 
 // ----------------------------------------------------
-// LÓGICA DEL CALENDARIO (CORREGIDA CON ISBACK)
+// LÓGICA DEL CALENDARIO (ÚNICA VERSIÓN)
 // ----------------------------------------------------
 function calcularTurnoGuardia(fecha) {
     const inicioRef = Date.UTC(2024, 0, 1);
@@ -700,7 +700,7 @@ function renderCalendarioSection(isBack = false) {
         <button class="turno-btn-small" style="background-color: ${t.color}" onclick="cambiarTurnoCal('${t.id}')">${t.id}</button>
     `).join('');
 
-    render(`
+    const html = `
         <div class="calendar-header-compact"><div class="turno-row">${botonesHTML}</div></div>
         <div class="calendar-nav">
             <button onclick="navegarMes(-1)">&#10140;</button>
@@ -708,7 +708,8 @@ function renderCalendarioSection(isBack = false) {
             <button onclick="navegarMes(1)">&#10140;</button>
         </div>
         <div id="calendar-view-container" class="calendar-view"></div>
-    `, 'Calendario de Turnos', { level: 1, section: 'calendario' }, isBack);
+    `;
+    render(html, 'Calendario de Turnos', { level: 1, section: 'calendario' }, isBack);
     actualizarVistaCalendario();
 }
 
@@ -740,7 +741,16 @@ function actualizarVistaCalendario() {
         tablaHTML += `<td style="${estilo}">${dia}</td>`;
         if (fecha.getDay() === 0 && dia !== diasMes) tablaHTML += '</tr><tr>';
     }
-    container.innerHTML = tablaHTML + '</tr></tbody></table>';
+    
+    const hoy = new Date();
+    const turnoHoyId = calcularTurnoGuardia(hoy);
+    const infoTurnoHoy = TURNOS_CONFIG.find(t => parseInt(t.id.replace('T','')) === turnoHoyId);
+    
+    const footerHTML = `</tr></tbody></table><div class="calendar-footer">
+        <div class="hoy-badge" style="border-left: 5px solid ${infoTurnoHoy.color}"><strong>HOY:</strong> Guardia del <span>${infoTurnoHoy.name}</span></div>
+        <div class="leyenda-item"><span class="dot" style="background-color: ${colorDinamico}"></span> Guardias del <strong>${turnoSeleccionadoCal}</strong></div>
+    </div>`;
+    container.innerHTML = tablaHTML + footerHTML;
 }
 
 function cambiarMesAño(v, t) { if(t==='mes') mesActualCal=parseInt(v); else añoActualCal=parseInt(v); actualizarVistaCalendario(); }
@@ -749,9 +759,8 @@ function cambiarTurnoCal(id) { turnoSeleccionadoCal=id; actualizarVistaCalendari
 function obtenerNombreMes(n) { return ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"][n]; }
 
 // ----------------------------------------------------
-// SISTEMA ÚNICO DE NAVEGACIÓN Y RETROCESO
+// SISTEMA DE NAVEGACIÓN (ÚNICO)
 // ----------------------------------------------------
-
 function handleBackNavigation() {
     if (navigationHistory.length > 1) {
         navigationHistory.pop(); 
@@ -777,9 +786,9 @@ function handleBackNavigation() {
     }
 }
 
-// Eventos globales
+// Eventos
 backButton.addEventListener('click', (e) => { e.preventDefault(); history.back(); });
-window.addEventListener('popstate', handleBackNavigation);
+window.onpopstate = handleBackNavigation;
 
 function goToHome() {
     if (navigationHistory.length > 0 && navigationHistory[navigationHistory.length - 1].level === 0) return;
@@ -795,6 +804,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     initializeApp(); 
 });
+
 
 
 
