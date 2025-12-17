@@ -166,17 +166,18 @@ function render(contentHTML, title, state, isBack = false) {
     appContent.innerHTML = contentHTML;
     document.querySelector('header h1').textContent = title;
 
-    // Solo gestionamos el historial si NO estamos volviendo atrás
+    // Solo añadimos al historial si vamos HACIA ADELANTE
     if (!isBack) {
         navigationHistory.push(state);
-        // Esto es vital para que el botón de Android no cierre la app de golpe
-        history.pushState(state, title);
+        // Sincronizamos con el navegador
+        history.pushState({ stateIndex: navigationHistory.length - 1 }, title);
     }
 
     const actionIcon = document.getElementById('header-action-icon');
     const logoImg = document.getElementById('header-logo-img');
     const backButton = document.getElementById('back-button');
 
+    // Control visual del botón
     if (state.level === 0) {
         logoImg.src = "images/favicon.png";
         actionIcon.classList.remove('header-logo-active');
@@ -911,51 +912,43 @@ function cambiarTurnoCal(turnoId) {
 // Función única de retroceso
 function handleBackNavigation() {
     if (navigationHistory.length > 1) {
-        // 1. Eliminamos el estado actual
+        // 1. Quitamos el estado actual del array
         navigationHistory.pop();
         
-        // 2. Obtenemos el estado al que queremos ir
+        // 2. Miramos el nuevo "último" estado
         const target = navigationHistory[navigationHistory.length - 1];
 
-        // 3. Ejecutamos la función de renderizado correspondiente pasándole isBack = true
-        if (target.level === 0) {
-            renderDashboard(true);
-        } else if (target.level === 1) {
-            if (target.section === 'material_global') {
-                renderGlobalMaterialList(true);
-            } else if (target.section === 'mapa') {
-                renderMapaSection(true);
-            } else if (target.section === 'calendario') {
-                renderCalendarioSection(true);
-            } else {
-                renderVehiclesList(true);
-            }
-        } else if (target.level === 2) {
-            showVehicleViews(target.vehicleId, true);
-        } else if (target.level === 3) {
-            showViewHotspots(target.vehicleId, target.viewId, true);
-        } else if (target.level === 4) {
-            showArmarioMaterial(target.vehicleId, target.viewId, target.hotspotIndex, true);
-        } else if (target.level === 4.5) {
-            showKitInventory(target.kitId, target.parentName, true);
-        } else if (target.level === 5) {
-            if (target.section === 'material_global') {
-                showGlobalMaterialDetail(target.materialId, true);
-            } else {
-                showMaterialDetails(target.materialId, true);
-            }
-        } else if (target.level === 6) {
-            renderResource(target.materialId, target.url, target.type, target.resourceName, true);
+        // 3. Ejecutamos la función con isBack = true para NO duplicar historial
+        window.scrollTo(0, 0);
+        
+        if (target.level === 0) renderDashboard(true);
+        else if (target.level === 1) {
+            if (target.section === 'material_global') renderGlobalMaterialList(true);
+            else if (target.section === 'mapa') renderMapaSection(true);
+            else if (target.section === 'calendario') renderCalendarioSection(true);
+            else renderVehiclesList(true);
         }
+        else if (target.level === 2) showVehicleViews(target.vehicleId, true);
+        else if (target.level === 3) showViewHotspots(target.vehicleId, target.viewId, true);
+        else if (target.level === 4) showArmarioMaterial(target.vehicleId, target.viewId, target.hotspotIndex, true);
+        else if (target.level === 4.5) showKitInventory(target.kitId, target.parentName, true);
+        else if (target.level === 5) {
+            if (target.section === 'material_global') showGlobalMaterialDetail(target.materialId, true);
+            else showMaterialDetails(target.materialId, true);
+        }
+        else if (target.level === 6) renderResource(target.materialId, target.url, target.type, target.resourceName, true);
     }
 }
 
-// Asignamos la función al botón de la interfaz
-document.getElementById('back-button').addEventListener('click', handleBackNavigation);
+// Vinculamos el clic del botón físico de la pantalla
+document.getElementById('back-button').addEventListener('click', (e) => {
+    e.preventDefault();
+    // Forzamos al navegador a ir atrás, lo que disparará el 'popstate'
+    history.back(); 
+});
 
-// Interceptamos el botón de Android/Navegador
+// Este es el ÚNICO lugar donde se ejecuta la lógica de cambio de pantalla al ir atrás
 window.addEventListener('popstate', (event) => {
-    // Si el usuario pulsa atrás en el sistema, ejecutamos nuestra lógica
     handleBackNavigation();
 });
 
@@ -993,6 +986,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     renderDashboard();
 });
+
 
 
 
