@@ -282,40 +282,46 @@ h1 {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
+/* 1. La fila debe impedir que sus hijos se desmadren */
 .inventory-row {
     display: flex;
+    width: 100%;
+    align-items: stretch; /* Estira las columnas para que midan lo mismo de alto */
     border-bottom: 1px solid #eee;
-    cursor: pointer;
-    transition: background 0.2s;
+    box-sizing: border-box;
 }
 
 .inventory-row:hover {
     background-color: #f9f9f9;
 }
 
-/* --- MODIFICACIÓN 1: Limpiar las columnas para que hereden el fondo de la fila --- */
+* 2. Columna de cantidad: BLOQUEO TOTAL */
 .col-qty {
-    width: 45px;            /* Ancho fijo para la columna de número */
-    flex-shrink: 0;         /* IMPRESCINDIBLE: Evita que el texto de al lado la comprima */
-    padding: 15px 5px;      /* Reducimos un poco el padding lateral para ganar espacio */
+    width: 50px !important;      /* Ancho fijo inamovible */
+    min-width: 50px !important;  /* Impide que se encoja */
+    max-width: 50px !important;  /* Impide que crezca */
+    flex: 0 0 50px !important;   /* No crece, no se encoge, base 50px */
+    
+    padding: 15px 0;
     font-weight: bold;
-    color: inherit;
-    background-color: transparent;
     text-align: center;
-    border-right: 2px solid rgba(0, 0, 0, 0.1); 
-    box-sizing: border-box; /* Asegura que el padding no sume ancho extra */
+    border-right: 2px solid rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
+/* 3. Columna de nombre: OCUPAR EL RESTO */
 .col-name {
-    flex-grow: 1;           /* Ocupa todo el espacio restante */
-    min-width: 0;           /* Clave para permitir que el texto largo se ajuste sin romper el flex */
+    flex: 1 1 auto !important;   /* Ocupa todo el espacio restante */
+    min-width: 0;                /* Permite que el contenido se ajuste al ancho sobrante */
     padding: 15px;
-    color: inherit;
-    background-color: transparent;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    word-break: break-word; /* Permite romper palabras si son excesivamente largas */
+    word-break: break-word;      /* Rompe palabras si es necesario para no empujar */
+    box-sizing: border-box;
 }
 
 
@@ -841,6 +847,7 @@ body {
 .kit-row .col-qty, .kit-row .col-name {
     color: #000 !important;
 }
+
 
 
 
