@@ -651,19 +651,22 @@ function showGlobalMaterialDetail(materialId, isBack = false) {
         });
     });
 
-    // GENERACIÓN DEL HTML CLICABLE
+    // GENERACIÓN DEL HTML CLICABLE //
     ubicacionesHTML = ubicaciones.length > 0 
         ? ubicaciones.map(u => `
             <div class="list-item" 
-                 style="border-left: 5px solid #AA1915; margin-bottom: 8px; padding: 12px; cursor: pointer; background: white;"
-                 onclick="console.log('Navegando a:', '${u.vId}'); showArmarioMaterial('${u.vId}', '${u.viewId}', ${u.hIndex})">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span><strong>${u.vName}</strong>: ${u.armario}</span>
-                    <span style="color: #AA1915; font-weight: bold;">VER ➔</span>
+                 style="border-left: 5px solid #AA1915; margin-bottom: 8px; padding: 12px; cursor: pointer; background: white; display: flex; align-items: center; gap: 10px;"
+                 onclick="showArmarioMaterial('${u.vId}', '${u.viewId}', ${u.hIndex})">
+                
+                <div style="flex-grow: 1; min-width: 0; word-wrap: break-word;">
+                    <strong>${u.vName}</strong>: ${u.armario}
+                </div>
+
+                <div style="flex-shrink: 0; color: #AA1915; font-weight: bold; white-space: nowrap; font-size: 0.9em; border: 1px solid #AA1915; padding: 4px 8px; border-radius: 4px;">
+                    VER ➔
                 </div>
             </div>`).join('')
         : '<p>No se han encontrado ubicaciones registradas.</p>';
-
     // 2. Lógica de Documentos (Recuperada de tu showMaterialDetails original)
     const mainPhoto = material.docs ? material.docs.find(doc => doc.type === 'photo') : null;
     const filteredDocs = material.docs ? material.docs.filter(doc => doc !== mainPhoto) : [];
@@ -821,6 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     initializeApp(); 
 });
+
 
 
 
