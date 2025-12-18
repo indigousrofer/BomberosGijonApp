@@ -460,34 +460,42 @@ function showKitInventory(kitId, parentName, isBack = false) {
 // --- NIVEL 5: Detalles del Material (Navega al Nivel 6) ---
 function showMaterialDetails(materialId, isBack = false) {
     const material = FIREBASE_DATA.MATERIALS[materialId];
-    const mainPhoto = material.docs.find(doc => doc.type === 'photo');
-    const filteredDocs = material.docs.filter(doc => doc !== mainPhoto);
+    if (!material) return;
 
+    // 1. FILTRADO ESTRICTO (Igual que en el buscador)
+    const documentosValidos = (material.docs || []).filter(doc => doc.url && doc.name);
+    
+    // 2. Identificar foto principal
+    const mainPhoto = documentosValidos.find(doc => doc.type === 'photo');
+    
+    // 3. Filtrar el resto para la lista
+    const filteredDocs = documentosValidos.filter(doc => doc !== mainPhoto);
+
+    // 4. Generar HTML de la lista de recursos
     const docsHTML = filteredDocs.length > 0 
-	    ? filteredDocs.map(doc => `
-	        <div class="list-item" onclick="renderResource('${materialId}', '${doc.url}', '${doc.type}', '${doc.name}')">
-	            <strong>${doc.type === 'video' || doc.type === 'video_mp4' ? '🎬' : '🖼️'} Ver ${doc.name}</strong>
-	        </div>
-	    `).join('')
-	    : ''; // Si no hay nada, queda totalmente vacío
-	
-	// 5. En el bloque de 'content', mostramos el título solo si hay documentos
-	const seccionDocumentacion = docsHTML !== '' 
-	    ? `<hr><h3>Documentación y Recursos</h3>${docsHTML}` 
-	    : '';
+        ? filteredDocs.map(doc => `
+            <div class="list-item" onclick="renderResource('${materialId}', '${doc.url}', '${doc.type}', '${doc.name}')">
+                <strong>${doc.type === 'video' || doc.type === 'video_mp4' ? '🎬' : '🖼️'} Ver ${doc.name}</strong>
+            </div>
+        `).join('')
+        : '';
 
-    render(`
+    // 5. Solo creamos la sección si hay contenido real
+    const seccionDocumentacion = docsHTML !== '' 
+        ? `<hr><h3>Documentación y Recursos</h3>${docsHTML}` 
+        : '';
+
+    const content = `
         <div class="material-detail-container">
             ${mainPhoto ? `<img src="${mainPhoto.url}" class="material-main-img">` : ''} 
             <div class="material-text">
                 <p><strong>Descripción:</strong></p>
-                <p>${material.description}</p>
+                <p>${material.description || 'Sin descripción disponible.'}</p>
             </div>
         </div>
-        <hr>
-        <h3>Documentación y Recursos</h3>
-        ${docsHTML}
-    `, material.name, { level: 5, materialId }, isBack);
+        ${seccionDocumentacion} `;
+
+    render(content, material.name, { level: 5, materialId: materialId }, isBack);
 }
 
 /// --- NIVEL 6: Renderizado de Recurso a Pantalla Completa -- ///
@@ -822,6 +830,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     initializeApp(); 
 });
+
 
 
 
