@@ -463,22 +463,18 @@ function showMaterialDetails(materialId, isBack = false) {
     const mainPhoto = material.docs.find(doc => doc.type === 'photo');
     const filteredDocs = material.docs.filter(doc => doc !== mainPhoto);
 
-    const docsHTML = filteredDocs.map(doc => {
-        if (doc.type === 'video_mp4') {
-            return `
-                <div class="list-item" onclick="renderResource('${materialId}', '${doc.url}', '${doc.type}', '${doc.name}')">
-                    <strong>🎬 Ver ${doc.name} (MP4)</strong>
-                </div>`;
-        }
-        
-        // Resto de lógica (YouTube, fotos)
-        else {
-             return `
-                <div class="list-item" onclick="renderResource('${materialId}', '${doc.url}', '${doc.type}', '${doc.name}')">
-                    <strong>${doc.type === 'video' ? '📹' : '🖼️'} Ver ${doc.name}</strong>
-                </div>`;
-        }
-    }).join('');
+    const docsHTML = filteredDocs.length > 0 
+	    ? filteredDocs.map(doc => `
+	        <div class="list-item" onclick="renderResource('${materialId}', '${doc.url}', '${doc.type}', '${doc.name}')">
+	            <strong>${doc.type === 'video' || doc.type === 'video_mp4' ? '🎬' : '🖼️'} Ver ${doc.name}</strong>
+	        </div>
+	    `).join('')
+	    : ''; // Si no hay nada, queda totalmente vacío
+	
+	// 5. En el bloque de 'content', mostramos el título solo si hay documentos
+	const seccionDocumentacion = docsHTML !== '' 
+	    ? `<hr><h3>Documentación y Recursos</h3>${docsHTML}` 
+	    : '';
 
     render(`
         <div class="material-detail-container">
@@ -671,30 +667,32 @@ function showGlobalMaterialDetail(materialId, isBack = false) {
     const mainPhoto = material.docs ? material.docs.find(doc => doc.type === 'photo') : null;
     const filteredDocs = material.docs ? material.docs.filter(doc => doc !== mainPhoto) : [];
 
-    const docsHTML = filteredDocs.map(doc => `
+    const docsHTML = filteredDocs.length > 0 
+    ? filteredDocs.map(doc => `
         <div class="list-item" onclick="renderResource('${materialId}', '${doc.url}', '${doc.type}', '${doc.name}')">
             <strong>${doc.type === 'video' || doc.type === 'video_mp4' ? '🎬' : '🖼️'} Ver ${doc.name}</strong>
         </div>
-    `).join('');
+    `).join('')
+    : ''; // Si no hay nada, queda totalmente vacío
+
+// 5. En el bloque de 'content', mostramos el título solo si hay documentos
+const seccionDocumentacion = docsHTML !== '' 
+    ? `<hr><h3>Documentación y Recursos</h3>${docsHTML}` 
+    : '';
 
     const content = `
-        <div class="material-detail-container">
-            ${mainPhoto ? `<img src="${mainPhoto.url}" class="material-main-img">` : ''} 
-            <div class="material-text">
-                <p><strong>Descripción:</strong></p>
-                <p>${material.description || 'Sin descripción.'}</p>
-            </div>
+    <div class="material-detail-container">
+        ${mainPhoto ? `<img src="${mainPhoto.url}" class="material-main-img">` : ''} 
+        <div class="material-text">
+            <p><strong>Descripción:</strong></p>
+            <p>${material.description || 'Sin descripción disponible.'}</p>
         </div>
-        <div style="margin-top: 20px;">
-            <h3 style="color: #AA1915; margin-bottom: 10px;">📍 Ubicación en Vehículos</h3>
-            <p style="font-size: 0.85em; color: #666; margin-bottom: 10px;">(Haz clic para ir al camión)</p>
-            ${ubicacionesHTML}
-        </div>
-        <hr>
-        <h3>Documentación y Recursos</h3>
-        ${docsHTML}
-    `;
-
+    </div>
+    <div style="margin-top: 20px; background: #f9f9f9; padding: 15px; border-radius: 8px;">
+        <h3 style="color: #AA1915; margin-top: 0;">📍 Ubicación en Vehículos</h3>
+        ${ubicacionesHTML}
+    </div>
+    ${seccionDocumentacion} `;
     render(content, material.name, { level: 5, materialId: materialId, section: 'material_global' }, isBack);
 }
 
@@ -824,6 +822,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     initializeApp(); 
 });
+
 
 
 
