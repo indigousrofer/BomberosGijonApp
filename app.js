@@ -1,36 +1,42 @@
-// Variable para rastrear el historial de navegación
+// 1. Configuración e Inicialización (Solo una vez)
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
 let navigationHistory = [];
 let mesActualCal = new Date().getMonth();
 let añoActualCal = new Date().getFullYear();
-let turnoSeleccionadoCal = 'T2'; // Turno por defecto al abrir
+let turnoSeleccionadoCal = 'T2';
 
 const appContent = document.getElementById('app-content');
 const backButton = document.getElementById('back-button');
 
-// Inicializa Firebase y la Base de Datos
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-// Variables globales para almacenar los datos (se llenarán desde Firebase)
 let FIREBASE_DATA = {
     VEHICLES: [],
     DETAILS: {},
     MATERIALS: {}
 };
-// ==========================================================
 
-
-// Variable para rastrear el historial de navegación... (resto del código)
-// ...
-
-// ----------------------------------------------------
-// Modificación crucial en el inicio de la aplicación
-// ----------------------------------------------------
-
-// Vamos a crear una función de inicialización que cargue los datos antes de renderizar.
+// 2. Único punto de inicio
 document.addEventListener('DOMContentLoaded', () => {
+    // Estado inicial para el historial
+    const initialState = { level: 0 };
+    history.replaceState(initialState, "Bomberos Gijón");
+    
     initializeApp(); 
+    // Llamada a la guía de instalación PWA que acordamos
+    setTimeout(mostrarGuiaInstalacion, 3000); 
 });
+
+async function initializeApp() {
+    render(`
+        <div style="text-align:center; padding-top: 50px;">
+            <p>Cargando datos del inventario...</p>
+            <div class="loader"></div> 
+        </div>`, 'Cargando...', { level: -1 }, false);
+    
+    await loadFirebaseData();
+    renderDashboard();
+}
 
 async function initializeApp() {
     // 1. Mostrar un mensaje de carga
@@ -873,15 +879,6 @@ function goToHome() {
     navigationHistory = [];
     renderDashboard();
 }
-
-// ----------------------------------------------------
-// INICIO DE LA APLICACIÓN
-// ----------------------------------------------------
-document.addEventListener('DOMContentLoaded', () => {
-    const initialState = { level: 0 };
-    history.replaceState(initialState, "Bomberos Gijón");
-    initializeApp(); 
-});
 
 
 
