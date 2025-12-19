@@ -1,41 +1,54 @@
-// 1. Configuración e Inicialización
-const APP_VERSION = 'bomberos-v30'; // <--- DEBE COINCIDIR CON EL SERVICE-WORKER
+// 1. DEFINICIÓN DE VARIABLES GLOBALES (Imprescindible arriba del todo)
+const APP_VERSION = 'v31'; 
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let navigationHistory = [];
+let mesActualCal = new Date().getMonth();
+let añoActualCal = new Date().getFullYear();
+let turnoSeleccionadoCal = 'T2';
+
+// Estas son las variables que te daban error de "not defined"
+const appContent = document.getElementById('app-content');
+const backButton = document.getElementById('back-button');
+
 let FIREBASE_DATA = { VEHICLES: [], DETAILS: {}, MATERIALS: {} };
 
+// 2. PUNTO DE INICIO
 document.addEventListener('DOMContentLoaded', () => {
+    // Verificamos que los elementos existan antes de empezar
+    if (!appContent || !backButton) {
+        console.error("Error: No se encontraron los elementos HTML críticos.");
+        return;
+    }
+
     initializeApp(); 
     
     if ('serviceWorker' in navigator) {
-        // Solo mostramos el aviso si la versión guardada es distinta a la actual
         const savedVersion = localStorage.getItem('app_version');
         if (savedVersion && savedVersion !== APP_VERSION) {
             showUpdateNotice();
         }
 
-        // Si el Service Worker cambia, preparamos la marca de actualización
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             localStorage.setItem('app_version', APP_VERSION);
         });
     }
 });
 
+// 3. FUNCIONES DE ACTUALIZACIÓN
 function showUpdateNotice() {
     if (document.getElementById('update-banner')) return;
     const aviso = document.createElement('div');
     aviso.id = 'update-banner';
-    // Estilo superior para que no estorbe abajo
     aviso.style = "position:fixed; top:70px; left:10px; right:10px; background:#AA1915; color:white; padding:15px; border-radius:8px; z-index:10005; text-align:center; font-weight:bold; border:2px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.3);";
     aviso.innerHTML = `NUEVA VERSIÓN LISTA <button onclick="forzarActualizacion()" style="margin-left:10px; padding:5px 15px; border-radius:5px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer;">ACTUALIZAR</button>`;
     document.body.appendChild(aviso);
 }
 
 function forzarActualizacion() {
-    localStorage.setItem('app_version', APP_VERSION); // Guardamos que ya actualizamos
-    window.location.reload(true); // Forzamos recarga del servidor
+    localStorage.setItem('app_version', APP_VERSION);
+    window.location.reload(true);
 }
 
 async function initializeApp() {
@@ -44,7 +57,7 @@ async function initializeApp() {
     renderDashboard();
 }
 
-// 3. Función renderResource (Visor GitHub + Descarga Drive)
+// 4. FUNCIÓN RENDER RESOURCE (Visor Directo)
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
         const material = FIREBASE_DATA.MATERIALS[materialId];
@@ -56,16 +69,16 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
             downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
         }
 
+        // Construimos la URL absoluta para el visor
+        const absolutePdfUrl = window.location.origin + window.location.pathname.replace('index.html', '') + url;
+
         const contentPdf = `
-            <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 60px); background:#f0f0f0; overflow:hidden;">
-                <iframe src="${window.location.origin + window.location.pathname.replace('index.html', '') + url}" 
+            <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 65px); background:#f0f0f0; overflow:hidden;">
+                <iframe src="${absolutePdfUrl}" 
                         type="application/pdf"
                         style="width:100%; height:100%; border:none; display:block;">
                 </iframe>
-                
-                <a href="${downloadUrl}" 
-                   target="_blank" 
-                   rel="noopener noreferrer" 
+                <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" 
                    style="position:fixed; bottom:30px; right:20px; background:#AA1915; color:white; 
                           padding:15px 25px; border-radius:50px; text-decoration:none; font-weight:bold; 
                           box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:10px; border:2px solid white;">
@@ -76,7 +89,7 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
         render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
         return;
     }
-    // (Resto de la lógica de fotos/videos igual)
+    
     let content = '';
     if (type === 'video' || type === 'video_mp4') {
         content = `<div class="video-container centered-resource"><iframe src="${url}" frameborder="0" allowfullscreen></iframe></div>`;
@@ -969,6 +982,7 @@ function forzarActualizacion() {
         window.location.reload(true);
     }
 }
+
 
 
 
