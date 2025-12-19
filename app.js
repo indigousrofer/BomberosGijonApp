@@ -365,25 +365,34 @@ function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
                 if (!material) return `<div class="inventory-row" style="color:red; padding:10px;">ID ${item.id} no encontrado</div>`;
                 
                 const isKit = material.is_kit;
-                const clickAction = isKit ? `showKitInventory('${item.id}', '${hotspot.name}')` : `showMaterialDetails('${item.id}')`;
-                const indicator = isKit ? '<span class="kit-indicator">(Ver contenido)</span>' : '';
-                const rowClass = isKit ? 'inventory-row kit-row' : 'inventory-row';
-
-                return `
-                    <div class="${rowClass}" onclick="${clickAction}">
-                        <div class="col-qty">${item.qty}</div>
-                        <div class="col-name">${material.name} ${indicator}</div>
-                    </div>`;
-            }).join('');
-            
-            return `
-                <div class="inventory-table-container">
-                    <h4 class="inventory-section-title">${section.name}</h4>
-                    <div class="inventory-table">
-                        ${headerHTML}${rowsHTML}
-                    </div>
-                </div>`;
-        }).join('');
+				const tieneInfo = tieneInformacionExtra(item.id);
+				
+				let clickAction = '';
+				let iconEye = '';
+				let rowClass = 'inventory-row';
+				
+				if (isKit) {
+				    clickAction = `onclick="showKitInventory('${item.id}', '${hotspot.name}')"`;
+				    rowClass += ' kit-row';
+				    // Los kits suelen ser clicables siempre para ver su contenido
+				} else if (tieneInfo) {
+				    clickAction = `onclick="showMaterialDetails('${item.id}')"`;
+				    iconEye = '<span style="margin-left:8px; opacity:0.7;">👁️</span>';
+				} else {
+				    // Si no es kit ni tiene info, quitamos el cursor de puntero
+				    clickAction = 'style="cursor: default;"'; 
+				}
+				
+				const indicator = isKit ? '<span class="kit-indicator">(Ver contenido)</span>' : '';
+				
+				return `
+				    <div class="${rowClass}" ${clickAction}>
+				        <div class="col-qty">${item.qty}</div>
+				        <div class="col-name">
+				            ${material.name}${iconEye} ${indicator}
+				        </div>
+				    </div>`;
+        	}).join('');
         contentHTML += `<div class="inventory-sections-wrapper">${tablesHTML}</div>`;
 	
     } else if (hotspot.inventory && hotspot.inventory.length > 0) {
@@ -393,15 +402,33 @@ function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
             if (!material) return `<div class="inventory-row" style="color:red; padding:10px;">ID ${item.id} no encontrado</div>`;
             
             const isKit = material.is_kit;
-            const clickAction = isKit ? `showKitInventory('${item.id}', '${hotspot.name}')` : `showMaterialDetails('${item.id}')`;
-            const indicator = isKit ? '<span class="kit-indicator">(Ver contenido)</span>' : '';
-            const rowClass = isKit ? 'inventory-row kit-row' : 'inventory-row';
-
-            return `
-                <div class="${rowClass}" onclick="${clickAction}">
-                    <div class="col-qty">${item.qty}</div>
-                    <div class="col-name">${material.name} ${indicator}</div>
-                </div>`;
+			const tieneInfo = tieneInformacionExtra(item.id);
+			
+			let clickAction = '';
+			let iconEye = '';
+			let rowClass = 'inventory-row';
+			
+			if (isKit) {
+			    clickAction = `onclick="showKitInventory('${item.id}', '${hotspot.name}')"`;
+			    rowClass += ' kit-row';
+			    // Los kits suelen ser clicables siempre para ver su contenido
+			} else if (tieneInfo) {
+			    clickAction = `onclick="showMaterialDetails('${item.id}')"`;
+			    iconEye = '<span style="margin-left:8px; opacity:0.7;">👁️</span>';
+			} else {
+			    // Si no es kit ni tiene info, quitamos el cursor de puntero
+			    clickAction = 'style="cursor: default;"'; 
+			}
+			
+			const indicator = isKit ? '<span class="kit-indicator">(Ver contenido)</span>' : '';
+			
+			return `
+			    <div class="${rowClass}" ${clickAction}>
+			        <div class="col-qty">${item.qty}</div>
+			        <div class="col-name">
+			            ${material.name}${iconEye} ${indicator}
+			        </div>
+			    </div>`;
         }).join('');
 	
         contentHTML += `
@@ -432,19 +459,20 @@ function showKitInventory(kitId, parentName, isBack = false) {
     `;
 
     const rowsHTML = kit.kit_contents.map(item => {
-        const material = FIREBASE_DATA.MATERIALS[item.id];
-        if (!material) return `<div class="inventory-row" style="color:red; padding:10px;">ID ${item.id} no encontrado</div>`;
-        
-        // El contenido del kit SIEMPRE va al Nivel 5 (detalles del material)
-        const clickAction = `showMaterialDetails('${item.id}')`;
-
-        return `
-            <div class="inventory-row" onclick="${clickAction}">
-                <div class="col-qty">${item.qty}</div>
-                <div class="col-name">${material.name}</div>
-            </div>
-        `;
-    }).join('');
+	    const material = FIREBASE_DATA.MATERIALS[item.id];
+	    if (!material) return '';
+	
+	    const tieneInfo = tieneInformacionExtra(item.id);
+	    const clickAction = tieneInfo ? `onclick="showMaterialDetails('${item.id}')"` : 'style="cursor: default;"';
+	    const iconEye = tieneInfo ? '<span style="margin-left:8px; opacity:0.7;">👁️</span>' : '';
+	
+	    return `
+	        <div class="inventory-row" ${clickAction}>
+	            <div class="col-qty">${item.qty}</div>
+	            <div class="col-name">${material.name}${iconEye}</div>
+	        </div>
+	    `;
+	}).join('');
 
     const contentHTML = `
         <div class="inventory-table">
@@ -848,6 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     initializeApp(); 
 });
+
 
 
 
