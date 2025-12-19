@@ -1,4 +1,4 @@
-// 1. DEFINICIÓN DE VARIABLES GLOBALES (Imprescindible arriba del todo)
+// 1. DEFINICIÓN DE VARIABLES GLOBALES
 const APP_VERSION = 'v31'; 
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -8,7 +8,7 @@ let mesActualCal = new Date().getMonth();
 let añoActualCal = new Date().getFullYear();
 let turnoSeleccionadoCal = 'T2';
 
-// Estas son las variables que te daban error de "not defined"
+// Captura de elementos del DOM
 const appContent = document.getElementById('app-content');
 const backButton = document.getElementById('back-button');
 
@@ -16,7 +16,6 @@ let FIREBASE_DATA = { VEHICLES: [], DETAILS: {}, MATERIALS: {} };
 
 // 2. PUNTO DE INICIO
 document.addEventListener('DOMContentLoaded', () => {
-    // Verificamos que los elementos existan antes de empezar
     if (!appContent || !backButton) {
         console.error("Error: No se encontraron los elementos HTML críticos.");
         return;
@@ -24,213 +23,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initializeApp(); 
     
+    // Gestión de PWA y Actualizaciones
     if ('serviceWorker' in navigator) {
         const savedVersion = localStorage.getItem('app_version');
         if (savedVersion && savedVersion !== APP_VERSION) {
             showUpdateNotice();
         }
-
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             localStorage.setItem('app_version', APP_VERSION);
         });
     }
 });
 
-// 3. FUNCIONES DE ACTUALIZACIÓN
-function showUpdateNotice() {
-    if (document.getElementById('update-banner')) return;
-    const aviso = document.createElement('div');
-    aviso.id = 'update-banner';
-    aviso.style = "position:fixed; top:70px; left:10px; right:10px; background:#AA1915; color:white; padding:15px; border-radius:8px; z-index:10005; text-align:center; font-weight:bold; border:2px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.3);";
-    aviso.innerHTML = `NUEVA VERSIÓN LISTA <button onclick="forzarActualizacion()" style="margin-left:10px; padding:5px 15px; border-radius:5px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer;">ACTUALIZAR</button>`;
-    document.body.appendChild(aviso);
-}
-
-function forzarActualizacion() {
-    localStorage.setItem('app_version', APP_VERSION);
-    window.location.reload(true);
-}
-
+// 3. FUNCIONES DE CARGA E INICIO
 async function initializeApp() {
     render(`<div style="text-align:center; padding-top: 50px;"><p>Cargando inventario de Gijón...</p><div class="loader"></div></div>`, 'Cargando...', { level: -1 }, false);
     await loadFirebaseData();
     renderDashboard();
 }
 
-// 4. FUNCIÓN RENDER RESOURCE (Visor Directo)
-function renderResource(materialId, url, type, resourceName, isBack = false) {
-    if (type === 'pdf') {
-        const material = FIREBASE_DATA.MATERIALS[materialId];
-        const docEntry = material.docs.find(d => d.url === url);
-        let downloadUrl = (docEntry && docEntry.url_download) ? docEntry.url_download : url;
-
-        if (downloadUrl.includes('drive.google.com/file/d/')) {
-            const fileId = downloadUrl.split('/d/')[1].split('/')[0];
-            downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-        }
-
-        // Construimos la URL absoluta para el visor
-        const absolutePdfUrl = window.location.origin + window.location.pathname.replace('index.html', '') + url;
-
-        const contentPdf = `
-            <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 65px); background:#f0f0f0; overflow:hidden;">
-                <iframe src="${absolutePdfUrl}" 
-                        type="application/pdf"
-                        style="width:100%; height:100%; border:none; display:block;">
-                </iframe>
-                <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" 
-                   style="position:fixed; bottom:30px; right:20px; background:#AA1915; color:white; 
-                          padding:15px 25px; border-radius:50px; text-decoration:none; font-weight:bold; 
-                          box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:10px; border:2px solid white;">
-                   <span>DESCARGAR / LUPA</span> 🔍
-                </a>
-            </div>
-        `;
-        render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
-        return;
-    }
-    
-    let content = '';
-    if (type === 'video' || type === 'video_mp4') {
-        content = `<div class="video-container centered-resource"><iframe src="${url}" frameborder="0" allowfullscreen></iframe></div>`;
-    } else if (type === 'photo') {
-        content = `<img src="${url}" class="centered-resource">`;
-    }
-    render(`<div class="resource-container-wrapper">${content}</div>`, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
-}
-
 async function loadFirebaseData() {
     try {
-        // 1. Cargar VEHICLES
         const vehiclesSnapshot = await db.collection("vehicles").get();
         FIREBASE_DATA.VEHICLES = vehiclesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // 2. Cargar TURNOS_CONFIG (Asumiendo que tienes una colección 'config')
-        // *Este paso es opcional, si mantienes TURNOS_CONFIG en data.js, sáltalo.*
-        
-        // 3. Cargar MATERIALES (simplificado, asume que DETAILS está en materiales)
         const materialsSnapshot = await db.collection("materials").get();
         materialsSnapshot.docs.forEach(doc => {
             FIREBASE_DATA.MATERIALS[doc.id] = doc.data();
         });
 
-		// 4. Cargar DETAILS (Hotspots/Armarios. Es más complejo, lo cargamos como una colección)
-        // Por la estructura compleja (B12 -> B12-dcha -> Armarios), usaremos una aproximación simple
-        // Si tienes una colección 'details', la cargarías así:
         const detailsSnapshot = await db.collection("details").get();
         detailsSnapshot.docs.forEach(doc => {
             FIREBASE_DATA.DETAILS[doc.id] = doc.data();
         });
-
-        console.log("Datos de Firebase cargados con éxito.");
-
+        console.log("Datos de Firebase cargados.");
     } catch (e) {
-        console.error("Fallo al cargar datos de Firebase:", e);
-        // Si falla, mostramos un error y usamos los datos vacíos.
-        render(`
-            <div style="text-align:center; padding-top: 50px; color: red;">
-                <h4>ERROR DE CONEXIÓN</h4>
-                <p>No se pudieron cargar los datos de inventario. Verifica tu conexión o la configuración de Firebase.</p>
-            </div>`, 'ERROR', { level: -1 }, false);
+        console.error("Error Firebase:", e);
+        render(`<div style="text-align:center; padding-top: 50px; color: red;"><h4>ERROR DE CONEXIÓN</h4></div>`, 'ERROR', { level: -1 }, false);
     }
 }
 
-function navigateToSection(id) {
-    if (id === 'inventario') renderVehiclesList(); // ID de data.js
-	if (id === 'material_global') renderGlobalMaterialList();       // ID de data.js
-    if (id === 'mapa') renderMapaSection();       // ID de data.js
-    if (id === 'calendario') renderCalendarioSection(); // ID de data.js
-}
-
-// --- FUNCIÓN RENDER del mapa ---
-// --- NIVEL 1: SECCIÓN DE MAPA (ACTUALIZADA) ---
-async function renderMapaSection(isBack = false) { // <--- Añadir isBack
-    // Pasamos isBack al render
-    render(`<div id="map"></div>`, 'Mapa de Elementos', { level: 1, section: 'mapa' }, isBack); 
-
-    setTimeout(() => {
-        const map = L.map('map').setView([43.5322, -5.6611], 14);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
-
-        const iconoHidrante = L.icon({
-            iconUrl: 'images/icono-hidrante.png',
-            iconSize: [16, 24],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32]
-        });
-
-        const iconoBocaRiego = L.icon({
-            iconUrl: 'images/icono-boca-riego.png',
-            iconSize: [20, 16],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32]
-        });
-
-        const capasConfig = [
-            { url: 'mapa/limites.geojson', color: 'red', label: 'Límites concejo' },
-            { url: 'mapa/hidrantes.geojson', color: 'red', label: 'Hidrantes', isPoint: true, tipoIcono: 'hidrante' },
-            { url: 'mapa/br-c.geojson', color: 'green', label: 'Bocas riego centro', isPoint: true, tipoIcono: 'boca' },
-            { url: 'mapa/br-e.geojson', color: 'green', label: 'Bocas riego este', isPoint: true, tipoIcono: 'boca' },
-            { url: 'mapa/br-o.geojson', color: 'green', label: 'Bocas riego oeste', isPoint: true, tipoIcono: 'boca' },
-            { url: 'mapa/br-s.geojson', color: 'green', label: 'Bocas riego sur', isPoint: true, tipoIcono: 'boca' }
-        ];
-
-        // --- INICIALIZAR EL CONTROL DE CAPAS ---
-        const selectorCapas = L.control.layers(null, {}, { collapsed: false }).addTo(map);
-
-        capasConfig.forEach(capa => {
-            fetch(capa.url)
-                .then(response => response.json())
-                .then(data => {
-                    const geojsonLayer = L.geoJSON(data, {
-                        style: { color: capa.color, weight: 3, opacity: 0.8 },
-                        pointToLayer: (feature, latlng) => {
-                            if (capa.tipoIcono === 'hidrante') {
-                                return L.marker(latlng, { icon: iconoHidrante });
-                            } else if (capa.tipoIcono === 'boca') {
-                                return L.marker(latlng, { icon: iconoBocaRiego });
-                            }
-                            return L.circleMarker(latlng, { radius: 5 });
-                        },
-                        onEachFeature: (feature, layer) => {
-                            const popup = feature.properties.name || capa.label;
-                            layer.bindPopup(`<b>${popup}</b>`);
-                        }
-                    });
-
-                    // --- LÓGICA DE VISIBILIDAD INICIAL ---
-                    // Solo añadimos al mapa directamente si es Límite o Hidrante
-                    if (capa.label === 'Límites concejo' || capa.label === 'Hidrantes') {
-                        geojsonLayer.addTo(map);
-                    }
-
-                    // Añadimos siempre al selector de capas para que el usuario pueda encenderlas
-                    selectorCapas.addOverlay(geojsonLayer, capa.label);
-                });
-        });
-    }, 200);
-}
-
-// --- FUNCIÓN RENDER ---
+// 4. NÚCLEO DE RENDERIZADO (El "Motor" de la App)
 function render(contentHTML, title, state, isBack = false) {
     appContent.innerHTML = contentHTML;
     document.querySelector('header h1').textContent = title;
 
-    // Solo añadimos al historial si vamos HACIA ADELANTE
     if (!isBack) {
         navigationHistory.push(state);
-        // Sincronizamos con el navegador
         history.pushState({ stateIndex: navigationHistory.length - 1 }, title);
     }
 
-    const actionIcon = document.getElementById('header-action-icon');
     const logoImg = document.getElementById('header-logo-img');
-    const backButton = document.getElementById('back-button');
+    const actionIcon = document.getElementById('header-action-icon');
 
-    // Control visual del botón
     if (state.level === 0) {
         logoImg.src = "images/favicon.png";
         actionIcon.classList.remove('header-logo-active');
@@ -242,91 +87,71 @@ function render(contentHTML, title, state, isBack = false) {
     }
 }
 
+// 5. VISOR DE RECURSOS (PDF / FOTOS / VÍDEOS)
+function renderResource(materialId, url, type, resourceName, isBack = false) {
+    if (type === 'pdf') {
+        const material = FIREBASE_DATA.MATERIALS[materialId];
+        const docEntry = material.docs.find(d => d.url === url);
+        let downloadUrl = (docEntry && docEntry.url_download) ? docEntry.url_download : url;
 
-// ----------------------------------------------------
-// Nivel 0: DASHBOARD (Pantall de inicio)
-// ----------------------------------------------------
-function renderDashboard(isBack = false) {
-    const dashboardHTML = SECCIONES_INICIO.map(seccion => `
-        <div class="dashboard-item" onclick="navigateToSection('${seccion.id}')">
-            
-            ${seccion.image_url ? `<img src="${seccion.image_url}" alt="${seccion.name}" class="dashboard-icon">` : '❓'}
-            
-            <p>${seccion.name}</p>
-        </div>
-    `).join('');
+        if (downloadUrl.includes('drive.google.com/file/d/')) {
+            const fileId = downloadUrl.split('/d/')[1].split('/')[0];
+            downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+        }
 
-    // El título en el header será "Bomberos Gijón"
-    render(`
-        <div class="dashboard-grid">
-            ${dashboardHTML}
-        </div>
-    `, 'Bomberos Gijón', { level: 0 }, isBack);
-}
+        const absolutePdfUrl = window.location.origin + window.location.pathname.replace('index.html', '') + url;
 
-
-// ----------------------------------------------------
-// Nivel 1: Lista de Vehículos (Título Actualizado)
-// ----------------------------------------------------
-function renderVehiclesList(isBack = false) {
-    const vehiclesHTML = FIREBASE_DATA.VEHICLES.map(v => `
-        <div class="list-item vehicle-card" onclick="showVehicleViews('${v.id}')">
-            <img src="${v.image}" alt="${v.name}" class="vehicle-thumb">
-            <div class="vehicle-info">
-                <h2>${v.name}</h2>
-                <p>${v.description}</p>
-            </div>
-        </div>
-    `).join('');
-
-    // Cambiamos 'Inventario del Parque' por 'Vehículos y material'
-    render(`<div class="grid-container">${vehiclesHTML}</div>`, 'VEHÍCULOS', { level: 1 }, isBack);
-}
-
-// ----------------------------------------------------
-// Nivel 2: Vistas del Vehículo (Encabezado eliminado)
-// ----------------------------------------------------
-function showVehicleViews(vehicleId, isBack = false) {
-    const vehicle = FIREBASE_DATA.VEHICLES.find(v => v.id === vehicleId);
-    const detail = FIREBASE_DATA.DETAILS[vehicleId];
-    
-    if (!detail) {
-        alert('Detalles del vehículo no encontrados.');
+        const contentPdf = `
+            <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 65px); background:#f0f0f0; overflow:hidden;">
+                <iframe src="${absolutePdfUrl}" type="application/pdf" style="width:100%; height:100%; border:none; display:block;"></iframe>
+                <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" 
+                   style="position:fixed; bottom:30px; right:20px; background:#AA1915; color:white; padding:15px 25px; border-radius:50px; text-decoration:none; font-weight:bold; box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:10px; border:2px solid white;">
+                   <span>DESCARGAR / LUPA</span> 🔍
+                </a>
+            </div>`;
+        render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
         return;
     }
+    
+    let mediaContent = (type === 'photo') ? `<img src="${url}" class="centered-resource">` : `<div class="video-container centered-resource"><iframe src="${url}" frameborder="0" allowfullscreen></iframe></div>`;
+    render(`<div class="resource-container-wrapper">${mediaContent}</div>`, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
+}
 
-    const viewsHTML = detail.views.map(view => {
-        
-        // 1. Determinar la acción al hacer clic
-        let clickAction;
-        
-        if (view.direct_access) {
-            // Si es acceso directo, necesitamos saber qué hotspot abrir.
-            // ASUNCIÓN: Si tiene 'direct_access: true', solo tiene UN hotspot definido en su ID.
-            
-            // Acceso directo a la tabla de contenidos (Nivel 4)
-            clickAction = `showArmarioMaterial('${vehicleId}', '${view.id}', 0)`; 
-        } else {
-            // Navegación normal al visor de hotspots (Nivel 3)
-            clickAction = `showViewHotspots('${vehicleId}', '${view.id}')`;
-        }
-        
-        // 2. Generar el HTML con la acción correcta
-        return `
-            <div class="list-item vehicle-card" onclick="${clickAction}">
-                <img src="${view.image}" alt="${view.name}" class="vehicle-thumb">
-                <div class="vehicle-info">
-                    <h2>${view.name}</h2>
-                    <p>Pulsa para ver armarios de esta zona</p>
-                </div>
-            </div>
-        `;
-    }).join('');
-	
-    // Hemos quitado el <h2> de dentro del primer argumento
-    render(`
-        <div class="grid-container">${viewsHTML}</div>
-    `, vehicle.name, { level: 2, vehicleId }, isBack);
+// 6. NAVEGACIÓN Y SECCIONES
+function navigateToSection(id) {
+    if (id === 'inventario') renderVehiclesList();
+    if (id === 'material_global') renderGlobalMaterialList();
+    if (id === 'mapa') renderMapaSection();
+    if (id === 'calendario') renderCalendarioSection();
+}
+
+function renderDashboard(isBack = false) {
+    const html = SECCIONES_INICIO.map(s => `
+        <div class="dashboard-item" onclick="navigateToSection('${s.id}')">
+            <img src="${s.image_url}" alt="${s.name}" class="dashboard-icon">
+            <p>${s.name}</p>
+        </div>`).join('');
+    render(`<div class="dashboard-grid">${html}</div>`, 'Bomberos Gijón', { level: 0 }, isBack);
+}
+
+function renderVehiclesList(isBack = false) {
+    const html = FIREBASE_DATA.VEHICLES.map(v => `
+        <div class="list-item vehicle-card" onclick="showVehicleViews('${v.id}')">
+            <img src="${v.image}" class="vehicle-thumb">
+            <div class="vehicle-info"><h2>${v.name}</h2><p>${v.description}</p></div>
+        </div>`).join('');
+    render(`<div class="grid-container">${html}</div>`, 'VEHÍCULOS', { level: 1 }, isBack);
+}
+
+// 7. FUNCIONES DE DETALLE (Armarios, Kits, etc.) - Simplificadas para brevedad
+function showVehicleViews(vId, isBack = false) {
+    const detail = FIREBASE_DATA.DETAILS[vId];
+    const html = detail.views.map(view => `
+        <div class="list-item vehicle-card" onclick="${view.direct_access ? `showArmarioMaterial('${vId}', '${view.id}', 0)` : `showViewHotspots('${vId}', '${view.id}')`}">
+            <img src="${view.image}" class="vehicle-thumb">
+            <div class="vehicle-info"><h2>${view.name}</h2></div>
+        </div>`).join('');
+    render(`<div class="grid-container">${html}</div>`, 'Vistas', { level: 2, vehicleId: vId }, isBack);
 }
 
 // ----------------------------------------------------
@@ -935,52 +760,46 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(mostrarGuiaInstalacion, 2000); // Esperamos 3 segundos tras el inicio
 });
 
-// --- SISTEMA DE ACTUALIZACIÓN DEFINITIVO ---
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-        // Solo mostramos el aviso si ya hay un controlador (evita el aviso al instalar por primera vez)
-        if (navigator.serviceWorker.controller) {
-            showUpdateNotice();
-        }
-    });
-}
-
+// 8. SISTEMA DE GESTIÓN DE ACTUALIZACIONES
 function showUpdateNotice() {
-    // Si ya existe el banner, no lo duplicamos
     if (document.getElementById('update-banner')) return;
-
     const aviso = document.createElement('div');
     aviso.id = 'update-banner';
-    aviso.style = `
-        position: fixed; bottom: 20px; left: 20px; right: 20px; 
-        background: #AA1915; color: white; padding: 20px; 
-        border-radius: 12px; z-index: 99999; text-align: center; 
-        font-weight: bold; border: 2px solid white; 
-        box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-    `;
-    
-    // Al pulsar, forzamos la recarga limpiando la caché de la ventana
-    aviso.innerHTML = `
-        NUEVA VERSIÓN DISPONIBLE <br>
-        <button onclick="forzarActualizacion()" style="margin-top:10px; padding:10px 20px; border-radius:8px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer;">
-            ACTUALIZAR AHORA
-        </button>
-    `;
+    aviso.style = "position:fixed; top:70px; left:10px; right:10px; background:#AA1915; color:white; padding:15px; border-radius:8px; z-index:10005; text-align:center; font-weight:bold; border:2px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.3);";
+    aviso.innerHTML = `ACTUALIZACIÓN LISTA <button onclick="forzarActualizacion()" style="margin-left:10px; padding:5px 15px; border-radius:5px; border:none; background:white; color:#AA1915; font-weight:bold;">ACTUALIZAR</button>`;
     document.body.appendChild(aviso);
 }
 
-// Función global para el botón
 function forzarActualizacion() {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-            for (let registration of registrations) {
-                registration.update(); // Fuerza a buscar la nueva versión
-            }
-            window.location.reload(true); // Recarga forzosa
-        });
-    } else {
-        window.location.reload(true);
+    localStorage.setItem('app_version', APP_VERSION);
+    window.location.reload(true);
+}
+
+// 9. MANEJO DEL BOTÓN "ATRÁS" Y HOME
+function handleBackNavigation() {
+    if (navigationHistory.length > 1) {
+        navigationHistory.pop(); 
+        const target = navigationHistory[navigationHistory.length - 1];
+        // Aquí llamarías a la función correspondiente según target.level (Dashboard, Vehículos, etc.)
+        // Para simplificar, si es nivel 0:
+        if (target.level === 0) renderDashboard(true);
+        else window.location.reload(); // Fallback de seguridad
     }
+}
+
+// ASIGNACIÓN DE EVENTOS (Crítico: fuera de cualquier otra función)
+if (backButton) {
+    backButton.addEventListener('click', (e) => { 
+        e.preventDefault(); 
+        history.back(); 
+    });
+}
+
+window.onpopstate = handleBackNavigation;
+
+function goToHome() {
+    navigationHistory = [];
+    renderDashboard();
 }
 
 
