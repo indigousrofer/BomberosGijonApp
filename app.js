@@ -1,4 +1,4 @@
-// 1. Configuración e Inicialización (Solo una vez)
+// 1. Configuración e Inicialización Única
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -16,28 +16,23 @@ let FIREBASE_DATA = {
     MATERIALS: {}
 };
 
-// 2. Único punto de inicio
+// 2. Punto de inicio único
 document.addEventListener('DOMContentLoaded', () => {
-    // Estado inicial para el historial
     const initialState = { level: 0 };
     history.replaceState(initialState, "Bomberos Gijón");
     
     initializeApp(); 
-    // Llamada a la guía de instalación PWA que acordamos
-    setTimeout(mostrarGuiaInstalacion, 3000); 
+    setTimeout(mostrarGuiaInstalacion, 3000);
 });
 
 async function initializeApp() {
-    // 1. Mostrar un mensaje de carga
     render(`
         <div style="text-align:center; padding-top: 50px;">
             <p>Cargando datos del inventario desde la central...</p>
             <div class="loader"></div> 
         </div>`, 'Cargando...', { level: -1 }, false);
     
-    await loadFirebaseData(); // <--- Llamada a la función de carga
-
-    // 2. Renderizar el Dashboard una vez que los datos estén listos
+    await loadFirebaseData();
     renderDashboard();
 }
 
@@ -541,23 +536,20 @@ function showMaterialDetails(materialId, isBack = false) {
 /// ---------------------------------------------------------- ///
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
-        // Creamos un enlace invisible
-        const link = document.createElement('a');
-        link.href = url;
-        // Estas tres líneas son la clave para "romper" el marco de la PWA
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.download = resourceName; 
-
-        // Lo añadimos al documento, simulamos el clic y lo borramos
-        document.body.appendChild(link);
-        link.click();
+        // Usamos una ventana con nombre propio para que el sistema lo gestione como entidad aparte
+        const nuevaVentana = window.open(url, '_blank');
         
-        // Pequeño truco: si el clic falla o se queda dentro, 
-        // usamos un timeout para intentar window.open como plan B
-        setTimeout(() => {
-            link.remove();
-        }, 100);
+        if (!nuevaVentana || nuevaVentana.closed || typeof nuevaVentana.closed == 'undefined') {
+            // Si el bloqueador de pop-ups actúa, mostramos un botón manual
+            const contentError = `
+                <div style="text-align:center; padding:20px;">
+                    <p>El navegador ha bloqueado la apertura automática.</p>
+                    <button onclick="window.open('${url}', '_blank')" class="view-button" style="background:#AA1915; color:white; width:100%;">
+                        ABRIR MANUAL CON LUPA 🔍
+                    </button>
+                </div>`;
+            render(contentError, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
+        }
         return; 
     }
     
@@ -914,6 +906,7 @@ function mostrarGuiaInstalacion() {
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(mostrarGuiaInstalacion, 3000); // Esperamos 3 segundos tras el inicio
 });
+
 
 
 
