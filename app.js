@@ -1,5 +1,5 @@
 // 1. Configuración e Inicialización
-const APP_VERSION = 'v27'; // <--- DEBE COINCIDIR CON EL SERVICE WORKER
+const APP_VERSION = 'v28'; // <--- DEBE COINCIDIR CON EL SERVICE WORKER
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -55,37 +55,39 @@ async function initializeApp() {
 // 3. Función renderResource (Visor GitHub + Descarga Drive)
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
-        // 1. Obtener los datos para la descarga (Drive)
         const material = FIREBASE_DATA.MATERIALS[materialId];
         const docEntry = material.docs.find(d => d.url === url);
-        
-        // Priorizamos la url_download si existe, si no usamos la url normal
         let downloadUrl = (docEntry && docEntry.url_download) ? docEntry.url_download : url;
 
-        // Si la URL es de Drive, la convertimos a descarga directa para que funcione la lupa al descargar
+        // 1. Preparar la URL de descarga (Google Drive)
         if (downloadUrl.includes('drive.google.com/file/d/')) {
             const fileId = downloadUrl.split('/d/')[1].split('/')[0];
             downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
         }
 
+        // 2. FORZAR VISOR: Usamos el visor de Google Docs con la URL absoluta del PDF
+        // Esto evita que Chrome muestre el botón azul de "Abrir"
+        const absolutePdfUrl = window.location.origin + '/' + url;
+        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(absolutePdfUrl)}&embedded=true`;
+
         const contentPdf = `
-            <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 60px); background:#f0f0f0; overflow:hidden;">
+            <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 60px); background:#f0f0f0;">
                 
-                <div id="pdf-loader" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; z-index: 5;">
+                <div id="pdf-loader" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
                     <div class="loader"></div>
-                    <p style="margin-top:10px; color:#666; font-weight:bold;">Abriendo visor de Gijón...</p>
+                    <p style="margin-top:10px; color:#666; font-weight:bold;">Generando visor técnico...</p>
                 </div>
 
-                <iframe src="${url}" 
+                <iframe src="${googleViewerUrl}" 
                         style="width:100%; height:100%; border:none; position:relative; z-index:10;" 
                         onload="document.getElementById('pdf-loader').style.display='none';">
                 </iframe>
                 
                 <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" 
-                   style="position:fixed; bottom:30px; right:20px; background:#AA1915; color:white; 
-                          padding:15px 25px; border-radius:50px; text-decoration:none; font-weight:bold; 
-                          box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:10px; border:2px solid white;">
-                   <span>DESCARGAR PDF</span> 🔍
+                   style="position:fixed; bottom:25px; right:15px; background:#AA1915; color:white; 
+                          padding:12px 20px; border-radius:50px; text-decoration:none; font-weight:bold; 
+                          box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:8px; border:2px solid white;">
+                   DESCARGAR PARA BUSCAR 🔍
                 </a>
             </div>
         `;
@@ -93,7 +95,7 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
         return;
     }
     
-    // Lógica para fotos y vídeos (se mantiene igual)
+    // Lógica para fotos y vídeos
     let content = '';
     if (type === 'video' || type === 'video_mp4') {
         content = `<div class="video-container centered-resource"><iframe src="${url}" frameborder="0" allowfullscreen></iframe></div>`;
@@ -986,6 +988,7 @@ function forzarActualizacion() {
         window.location.reload(true);
     }
 }
+
 
 
 
