@@ -1,5 +1,5 @@
 // 1. DEFINICIÓN DE VARIABLES GLOBALES E INICIALIZACIÓN
-const APP_VERSION = 'v37'; 
+const APP_VERSION = 'v38'; 
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -527,31 +527,29 @@ function showMaterialDetails(materialId, isBack = false) {
 /// --- NIVEL 6: Renderizado de Recurso a Pantalla Completa -- ///
 /// ---------------------------------------------------------- ///
 function renderResource(materialId, url, type, resourceName, isBack = false) {
-    if (type === 'pdf') {
+    if (type === "pdf") {
 	  const contentPdf = `
-	    <div class="pdfjs-wrapper" style="height: calc(100vh - 65px); width:100%; background:#f0f0f0; overflow:hidden;">
-	      
-	      <!-- Toolbar -->
-	      <div class="pdfjs-toolbar" style="position:sticky; top:0; z-index:5; background:white; padding:10px; display:flex; gap:10px; align-items:center; border-bottom:1px solid #ddd;">
-	        <button onclick="pdfZoomOut()" style="padding:8px 12px;">−</button>
-	        <button onclick="pdfZoomIn()" style="padding:8px 12px;">+</button>
+	    <div class="pdfjs-wrapper">
+	      <div class="pdfjs-toolbar">
+	        <button onclick="pdfZoomOut()" class="pdfjs-btn">−</button>
+	        <button onclick="pdfZoomIn()" class="pdfjs-btn">+</button>
 	
-	        <!-- TU BOTÓN DE DESCARGA (sin tocar la lógica) -->
-	        <a href="${url}" download target="_blank" rel="noopener noreferrer"
-	           style="margin-left:10px; padding:8px 12px; background:#AA1915; color:white; border-radius:6px; text-decoration:none;">
+	        <!-- TU BOTÓN DE DESCARGA -->
+	        <a href="${url}" download target="_blank" rel="noopener noreferrer" class="pdfjs-download">
 	          Descargar
 	        </a>
 	
-	        <span id="pdfjs-page-info" style="margin-left:auto; font-weight:bold;"></span>
+	        <span id="pdfjs-page-info" class="pdfjs-info"></span>
 	      </div>
 	
-	      <!-- PDF -->
-	      <div id="pdfjs-scroll" style="height:100%; overflow:auto; -webkit-overflow-scrolling:touch; padding:10px;">
-	        <canvas id="pdfjs-canvas" style="width:100%; background:white; border-radius:8px;"></canvas>
-	        <div id="pdfjs-loading" style="text-align:center; padding:20px; color:#666;">
+	      <div id="pdfjs-scroll" class="pdfjs-scroll">
+	        <div id="pdfjs-loading" class="pdfjs-loading">
 	          <div class="loader"></div>
-	          <p style="margin-top:10px;">Cargando PDF…</p>
+	          <p>Cargando PDF…</p>
 	        </div>
+	
+	        <!-- Aquí se pintan TODAS las páginas -->
+	        <div id="pdfjs-pages" class="pdfjs-pages"></div>
 	      </div>
 	    </div>
 	  `;
@@ -566,6 +564,7 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
 	  setTimeout(() => openPdfWithPdfjs(url), 0);
 	  return;
 	}
+
 
     // Lógica para otros recursos (fotos/vídeos)
     let content = '';
@@ -582,71 +581,207 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
 /// FUNCIONES DE LA LIBRERIA PDF.JS ///
 /// ------------------------------- ///
 let __pdfDoc = null;
-let __pdfPage = 1;
-let __pdfScale = 1.2;
+let __pdfScale = 1;       // escala base real (re-render)
+let __pdfFitScale = 1;    // escala “fit to width”
+let __pdfRenderToken = 0; // para cancelar renders antiguos
+
+// Estado pinch
+let __pinch = {
+  active: false,
+  pointers: new Map(),
+  startDist: 0,
+  startScale: 1,
+  previewScale: 1,
+  raf: 0,
+};
 
 async function openPdfWithPdfjs(url) {
   try {
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
 
-    const canvas = document.getElementById("pdfjs-canvas");
-    const ctx = canvas.getContext("2d", { alpha: false });
     const loadingEl = document.getElementById("pdfjs-loading");
+    const pagesEl = document.getElementById("pdfjs-pages");
+    const scrollEl = document.getElementById("pdfjs-scroll");
+    if (!pagesEl || !scrollEl) return;
+
+    pagesEl.innerHTML = "";
+    if (loadingEl) loadingEl.style.display = "block";
 
     __pdfDoc = await pdfjsLib.getDocument(url).promise;
-    __pdfPage = 1;
-    __pdfScale = 1.2;
+
+    // Calcula escala inicial “fit to width” con la primera página
+    __pdfFitScale = await computeFitScale(__pdfDoc, scrollEl);
+    __pdfScale = __pdfFitScale;
+
+    setupPinchZoom(scrollEl, pagesEl);
+    await renderAllPages(scrollEl);
 
     if (loadingEl) loadingEl.style.display = "none";
-    await renderPdfPage(ctx, canvas);
+    updatePageInfo();
   } catch (err) {
     console.error("PDF.js error:", err);
     const loadingEl = document.getElementById("pdfjs-loading");
     if (loadingEl) {
       loadingEl.innerHTML = `
         <p style="color:#AA1915; font-weight:bold;">No se pudo abrir el PDF dentro de la app.</p>
+        <p style="color:#666;">Puede ser CORS (Drive/externo). Puedes abrirlo fuera:</p>
         <p><a href="${url}" target="_blank" rel="noopener noreferrer">Abrir PDF</a></p>
       `;
     }
   }
 }
 
-async function renderPdfPage(ctx, canvas) {
+async function computeFitScale(pdfDoc, scrollEl) {
+  const page1 = await pdfDoc.getPage(1);
+  const viewport1 = page1.getViewport({ scale: 1 });
+  const padding = 24; // ~12px left + 12px right del scroll
+  const availableWidth = Math.max(320, scrollEl.clientWidth - padding);
+  return availableWidth / viewport1.width;
+}
+
+function updatePageInfo() {
+  const info = document.getElementById("pdfjs-page-info");
+  if (info && __pdfDoc) info.textContent = `${__pdfDoc.numPages} páginas`;
+}
+
+async function renderAllPages(scrollEl) {
   if (!__pdfDoc) return;
 
-  const page = await __pdfDoc.getPage(__pdfPage);
+  const token = ++__pdfRenderToken;
+  const pagesEl = document.getElementById("pdfjs-pages");
+  if (!pagesEl) return;
+
+  pagesEl.innerHTML = "";
+
+  // Render secuencial para no petar memoria en móviles
+  for (let p = 1; p <= __pdfDoc.numPages; p++) {
+    if (token !== __pdfRenderToken) return; // cancelado
+
+    const canvas = document.createElement("canvas");
+    canvas.setAttribute("data-page", String(p));
+    pagesEl.appendChild(canvas);
+
+    await renderPageToCanvas(p, canvas);
+  }
+}
+
+async function renderPageToCanvas(pageNumber, canvas) {
+  const page = await __pdfDoc.getPage(pageNumber);
   const viewport = page.getViewport({ scale: __pdfScale });
 
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = viewport.width * dpr;
-  canvas.height = viewport.height * dpr;
-  canvas.style.width = `${viewport.width}px`;
-  canvas.style.height = `${viewport.height}px`;
+  const ctx = canvas.getContext("2d", { alpha: false });
+
+  canvas.width = Math.floor(viewport.width * dpr);
+  canvas.height = Math.floor(viewport.height * dpr);
+
+  // Mantén tamaño CSS al viewport (para que “encaje” y no se corte)
+  canvas.style.width = `${Math.floor(viewport.width)}px`;
+  canvas.style.height = `${Math.floor(viewport.height)}px`;
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   await page.render({ canvasContext: ctx, viewport }).promise;
-
-  const info = document.getElementById("pdfjs-page-info");
-  if (info) info.textContent = `Página ${__pdfPage} / ${__pdfDoc.numPages}`;
 }
 
 function pdfZoomIn() {
-  __pdfScale = Math.min(__pdfScale + 0.2, 4);
-  rerenderPdf();
+  setPdfScale(__pdfScale * 1.15);
 }
 
 function pdfZoomOut() {
-  __pdfScale = Math.max(__pdfScale - 0.2, 0.6);
-  rerenderPdf();
+  setPdfScale(__pdfScale / 1.15);
 }
 
-function rerenderPdf() {
-  const canvas = document.getElementById("pdfjs-canvas");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d", { alpha: false });
-  renderPdfPage(ctx, canvas);
+function setPdfScale(newScale) {
+  // límites razonables
+  const clamped = Math.max(__pdfFitScale * 0.6, Math.min(newScale, __pdfFitScale * 4));
+  __pdfScale = clamped;
+
+  // Re-render todas las páginas
+  const scrollEl = document.getElementById("pdfjs-scroll");
+  if (!scrollEl) return;
+  renderAllPages(scrollEl).then(updatePageInfo);
 }
+
+/* -----------------------------
+   Pinch-to-zoom (Pointer Events)
+   Preview con transform (suave) y al soltar re-render (nítido)
+------------------------------ */
+function setupPinchZoom(scrollEl, pagesEl) {
+  // Para que funcione en móviles sin “scroll accidental” al pinchar
+  scrollEl.style.touchAction = "pan-y pinch-zoom";
+
+  const onPointerDown = (e) => {
+    // Captura el puntero para seguir recibiendo eventos
+    scrollEl.setPointerCapture?.(e.pointerId);
+    __pinch.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (__pinch.pointers.size === 2) {
+      const [a, b] = Array.from(__pinch.pointers.values());
+      __pinch.active = true;
+      __pinch.startDist = dist(a, b);
+      __pinch.startScale = __pdfScale;
+      __pinch.previewScale = __pdfScale;
+    }
+  };
+
+  const onPointerMove = (e) => {
+    if (!__pinch.pointers.has(e.pointerId)) return;
+    __pinch.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (__pinch.active && __pinch.pointers.size === 2) {
+      e.preventDefault();
+
+      const [a, b] = Array.from(__pinch.pointers.values());
+      const d = dist(a, b);
+      if (__pinch.startDist <= 0) return;
+
+      // escala preview
+      const ratio = d / __pinch.startDist;
+      const target = __pinch.startScale * ratio;
+
+      __pinch.previewScale = Math.max(__pdfFitScale * 0.6, Math.min(target, __pdfFitScale * 4));
+
+      // Preview suave: transform (sin re-render continuo)
+      schedulePreviewTransform(pagesEl, __pinch.previewScale / __pdfScale);
+    }
+  };
+
+  const endPinch = () => {
+    if (!__pinch.active) return;
+    __pinch.active = false;
+
+    // Quita preview transform y re-render a escala final
+    pagesEl.style.transform = "";
+    setPdfScale(__pinch.previewScale);
+  };
+
+  const onPointerUpOrCancel = (e) => {
+    __pinch.pointers.delete(e.pointerId);
+    if (__pinch.pointers.size < 2) endPinch();
+  };
+
+  // Evita duplicar listeners si vuelves a abrir PDFs
+  scrollEl.onpointerdown = onPointerDown;
+  scrollEl.onpointermove = onPointerMove;
+  scrollEl.onpointerup = onPointerUpOrCancel;
+  scrollEl.onpointercancel = onPointerUpOrCancel;
+}
+
+function schedulePreviewTransform(el, scaleFactor) {
+  if (__pinch.raf) cancelAnimationFrame(__pinch.raf);
+  __pinch.raf = requestAnimationFrame(() => {
+    // Escala visual (preview)
+    el.style.transform = `scale(${scaleFactor})`;
+  });
+}
+
+function dist(a, b) {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.hypot(dx, dy);
+}
+
 
 
 /// SIMULACIÓN DE NIVEL 6 PARA EL PDF VIEWER
@@ -1035,6 +1170,7 @@ function forzarActualizacion() {
         window.location.reload(true);
     }
 }
+
 
 
 
