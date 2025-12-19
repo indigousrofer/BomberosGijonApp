@@ -19,20 +19,22 @@ self.addEventListener('install', event => {
 
 /// Estrategia: Caché con actualización en segundo plano (Stale-while-revalidate)
 self.addEventListener('fetch', event => {
+  // FILTRO CRÍTICO: Ignorar extensiones de Chrome y otros protocolos no estándar
+  if (!(event.request.url.indexOf('http') === 0)) return;
+
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
-      // 1. Si está en caché, la devolvemos inmediatamente para que la app vuele
       const fetchPromise = fetch(event.request).then(networkResponse => {
-        // IMPORTANTE: Comprobar que la respuesta sea válida antes de cachear
+        // Comprobar que la respuesta sea válida y de protocolo seguro
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-          const responseToCache = networkResponse.clone(); // CLONAMOS PRIMERO
+          const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseToCache); // GUARDAMOS EL CLON
+            cache.put(event.request, responseToCache);
           });
         }
-        return networkResponse; // DEVOLVEMOS LA ORIGINAL
+        return networkResponse;
       }).catch(() => {
-        // Si falla la red (offline total) no pasa nada, ya devolvimos la caché arriba
+        // Silenciar errores de red para evitar ruido en consola si estamos offline
       });
 
       return cachedResponse || fetchPromise;
