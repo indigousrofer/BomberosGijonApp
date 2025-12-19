@@ -339,7 +339,20 @@ function showViewHotspots(vehicleId, viewId, isBack = false) {
 // Nivel 4: Lista de Material (Soporta Secciones y Modo Simple)
 // ----------------------------------------------------
 
-// [Asegúrate de que la función auxiliar generateInventoryRows esté definida ANTES o encima]
+// Función para saber si un material tiene información extra (foto, descripción o docs)
+function tieneInformacionExtra(materialId) {
+    const material = FIREBASE_DATA.MATERIALS[materialId];
+    if (!material) return false;
+
+    // Comprobar descripción
+    const tieneDesc = material.description && material.description.trim() !== "";
+    
+    // Comprobar documentos válidos (incluye fotos)
+    const docsValidos = (material.docs || []).filter(doc => doc.url && doc.name);
+    const tieneDocs = docsValidos.length > 0;
+
+    return tieneDesc || tieneDocs;
+}
 
 function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
     const detail = FIREBASE_DATA.DETAILS[vehicleId];
@@ -578,21 +591,6 @@ function handleManualOpen(materialId, docName) {
 
 // --- SECCIÓN 2: BUSCADOR GLOBAL DE MATERIAL --- ///
 /// --------------------------------------------- ///
-
-// Función para saber si un material tiene información extra (foto, descripción o docs)
-function tieneInformacionExtra(materialId) {
-    const material = FIREBASE_DATA.MATERIALS[materialId];
-    if (!material) return false;
-
-    // Comprobar descripción
-    const tieneDesc = material.description && material.description.trim() !== "";
-    
-    // Comprobar documentos válidos (incluye fotos)
-    const docsValidos = (material.docs || []).filter(doc => doc.url && doc.name);
-    const tieneDocs = docsValidos.length > 0;
-
-    return tieneDesc || tieneDocs;
-}
 
 function renderGlobalMaterialList(isBack = false) {
     // Al eliminar 'lastMaterialSearch', el buscador siempre arrancará limpio
@@ -920,6 +918,7 @@ function mostrarGuiaInstalacion() {
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(mostrarGuiaInstalacion, 3000); // Esperamos 3 segundos tras el inicio
 });
+
 
 
 
