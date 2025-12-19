@@ -551,12 +551,20 @@ function showMaterialDetails(materialId, isBack = false) {
 /// --- NIVEL 6: Renderizado de Recurso a Pantalla Completa -- ///
 /// ---------------------------------------------------------- ///
 function renderResource(materialId, url, type, resourceName, isBack = false) {
-    // Si es un PDF, lo abrimos fuera de la app
+    // Si es un PDF, forzamos la apertura en un entorno externo
     if (type === 'pdf') {
-        // Abrimos en una pestaña nueva, lo que disparará el visor nativo del móvil
-        window.open(url, '_blank');
-        return; // Detenemos la ejecución para que no intente renderizar nada en la app
+        // 'noopener,noreferrer' ayuda a separar el proceso de la app
+        // En muchos móviles, esto disparará el selector de aplicaciones (Drive, Acrobat, etc.)
+        const pdfWindow = window.open(url, '_blank', 'noopener,noreferrer');
+        
+        // Si por alguna razón el navegador bloquea el popup, avisamos al usuario
+        if (!pdfWindow) {
+            alert("Por favor, permite las ventanas emergentes para abrir el manual.");
+        }
+        return; 
     }
+    
+    // ... resto del código (videos, fotos...)
 
     let content = '';
 
@@ -921,6 +929,7 @@ function mostrarGuiaInstalacion() {
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(mostrarGuiaInstalacion, 3000); // Esperamos 3 segundos tras el inicio
 });
+
 
 
 
