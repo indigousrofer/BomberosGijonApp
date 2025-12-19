@@ -930,34 +930,54 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(mostrarGuiaInstalacion, 2000); // Esperamos 3 segundos tras el inicio
 });
 
-// --- SISTEMA DE ACTUALIZACIÓN SANEADO ---
+// --- SISTEMA DE ACTUALIZACIÓN DEFINITIVO ---
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready.then(registration => {
-        // Si hay un SW esperando al abrir, avisamos
-        if (registration.waiting) {
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        // Solo mostramos el aviso si ya hay un controlador (evita el aviso al instalar por primera vez)
+        if (navigator.serviceWorker.controller) {
             showUpdateNotice();
         }
-        
-        // Escuchamos si aparece uno nuevo mientras la app está abierta
-        registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
-            newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    showUpdateNotice();
-                }
-            });
-        });
     });
 }
 
 function showUpdateNotice() {
-    if (document.getElementById('update-banner')) return; // Evitar duplicados
+    // Si ya existe el banner, no lo duplicamos
+    if (document.getElementById('update-banner')) return;
+
     const aviso = document.createElement('div');
     aviso.id = 'update-banner';
-    aviso.style = "position:fixed; bottom:20px; left:20px; right:20px; background:#AA1915; color:white; padding:20px; border-radius:12px; z-index:99999; text-align:center; font-weight:bold; border:2px solid white; box-shadow: 0 5px 20px rgba(0,0,0,0.5);";
-    aviso.innerHTML = `NUEVA VERSIÓN DISPONIBLE <br><button onclick="window.location.reload()" style="margin-top:10px; padding:10px 20px; border-radius:8px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer;">ACTUALIZAR AHORA</button>`;
+    aviso.style = `
+        position: fixed; bottom: 20px; left: 20px; right: 20px; 
+        background: #AA1915; color: white; padding: 20px; 
+        border-radius: 12px; z-index: 99999; text-align: center; 
+        font-weight: bold; border: 2px solid white; 
+        box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    `;
+    
+    // Al pulsar, forzamos la recarga limpiando la caché de la ventana
+    aviso.innerHTML = `
+        NUEVA VERSIÓN DISPONIBLE <br>
+        <button onclick="forzarActualizacion()" style="margin-top:10px; padding:10px 20px; border-radius:8px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer;">
+            ACTUALIZAR AHORA
+        </button>
+    `;
     document.body.appendChild(aviso);
 }
+
+// Función global para el botón
+function forzarActualizacion() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+            for (let registration of registrations) {
+                registration.update(); // Fuerza a buscar la nueva versión
+            }
+            window.location.reload(true); // Recarga forzosa
+        });
+    } else {
+        window.location.reload(true);
+    }
+}
+
 
 
 
