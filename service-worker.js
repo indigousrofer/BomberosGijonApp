@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bomberos-v22';
+const CACHE_NAME = 'bomberos-v23'; // Sube a v23
 const urlsToCache = [
   './',
   './index.html',
@@ -9,32 +9,33 @@ const urlsToCache = [
   './images/icon-192.png'
 ];
 
-// Fuerza al nuevo Service Worker a tomar el control inmediatamente
+// Unificamos instalación y forzamos el control
 self.addEventListener('install', event => {
   self.skipWaiting(); 
-});
-
-self.addEventListener('activate', event => {
-  event.waitUntil(clients.claim()); 
-});
-
-// Instalación del Service Worker
-self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
   );
 });
 
-/// Estrategia: Caché con actualización en segundo plano (Stale-while-revalidate)
-self.addEventListener('fetch', event => {
-  // FILTRO CRÍTICO: Ignorar extensiones de Chrome y otros protocolos no estándar
-  if (!(event.request.url.indexOf('http') === 0)) return;
+self.addEventListener('activate', event => {
+  // Limpieza de cachés antiguas
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.filter(name => name !== CACHE_NAME)
+          .map(name => caches.delete(name))
+      );
+    })
+  );
+  return self.clients.claim(); 
+});
 
+self.addEventListener('fetch', event => {
+  if (!(event.request.url.indexOf('http') === 0)) return;
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
       const fetchPromise = fetch(event.request).then(networkResponse => {
-        // Comprobar que la respuesta sea válida y de protocolo seguro
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => {
@@ -42,14 +43,12 @@ self.addEventListener('fetch', event => {
           });
         }
         return networkResponse;
-      }).catch(() => {
-        // Silenciar errores de red para evitar ruido en consola si estamos offline
-      });
-
+      }).catch(() => {});
       return cachedResponse || fetchPromise;
     })
   );
 });
+
 
 
 
