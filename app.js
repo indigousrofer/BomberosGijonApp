@@ -23,6 +23,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     initializeApp(); 
     setTimeout(mostrarGuiaInstalacion, 3000);
+
+    // Sistema de detección de versiones mejorado para evitar bucles
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            // Solo avisamos si la página ya estaba siendo controlada por un SW anterior
+            if (navigator.serviceWorker.controller) {
+                showUpdateNotice();
+            }
+        });
+    }
 });
 
 async function initializeApp() {
@@ -536,23 +546,32 @@ function showMaterialDetails(materialId, isBack = false) {
 /// ---------------------------------------------------------- ///
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
-        // Convertimos URL de Drive a descarga directa para el botón de la Lupa
+        // Preparar URL de descarga directa de Google Drive
         let downloadUrl = url;
         if (url.includes('drive.google.com/file/d/')) {
             const fileId = url.split('/d/')[1].split('/')[0];
             downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
         }
 
-        // Visor de Google para vista rápida dentro de la App
+        // Usamos el visor de Google Docs
         const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
 
         const contentPdf = `
-            <div class="resource-container-wrapper" style="position:relative; height: 100vh; overflow:hidden;">
-                <iframe src="${googleViewerUrl}" style="width:100%; height:100%; border:none;"></iframe>
+            <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 60px); background:#f0f0f0; overflow:hidden;">
+                
+                <div id="pdf-loader" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; z-index: 5;">
+                    <div class="loader"></div>
+                    <p style="margin-top:10px; color:#666; font-weight:bold;">Abriendo manual técnico...</p>
+                </div>
+
+                <iframe src="${googleViewerUrl}" 
+                        style="width:100%; height:100%; border:none; position:relative; z-index:10;" 
+                        onload="document.getElementById('pdf-loader').style.display='none';">
+                </iframe>
                 
                 <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" 
                    style="position:fixed; bottom:30px; right:20px; background:#AA1915; color:white; 
-                          padding:15px 20px; border-radius:50px; text-decoration:none; font-weight:bold; 
+                          padding:15px 25px; border-radius:50px; text-decoration:none; font-weight:bold; 
                           box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:10px; border:2px solid white;">
                    <span>DESCARGAR / LUPA</span> 🔍
                 </a>
@@ -565,9 +584,7 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
     // Lógica para otros recursos (fotos/vídeos)
     let content = '';
     if (type === 'video' || type === 'video_mp4') {
-        content = `<div class="video-container centered-resource">
-            <iframe src="${url}" frameborder="0" allowfullscreen></iframe>
-        </div>`;
+        content = `<div class="video-container centered-resource"><iframe src="${url}" frameborder="0" allowfullscreen></iframe></div>`;
     } else if (type === 'photo') {
         content = `<img src="${url}" class="centered-resource">`;
     }
@@ -941,6 +958,7 @@ function showUpdateNotice() {
     aviso.innerHTML = `NUEVA VERSIÓN DISPONIBLE <br><button onclick="window.location.reload()" style="margin-top:10px; padding:10px 20px; border-radius:8px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer;">ACTUALIZAR AHORA</button>`;
     document.body.appendChild(aviso);
 }
+
 
 
 
