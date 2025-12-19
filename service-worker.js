@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bomberos-v23'; // Sube a v23
+const CACHE_NAME = 'bomberos-v24'; // He subido a v24 para forzar el cambio
 const urlsToCache = [
   './',
   './index.html',
@@ -9,7 +9,6 @@ const urlsToCache = [
   './images/icon-192.png'
 ];
 
-// Unificamos instalación y forzamos el control
 self.addEventListener('install', event => {
   self.skipWaiting(); 
   event.waitUntil(
@@ -19,7 +18,6 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  // Limpieza de cachés antiguas
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
