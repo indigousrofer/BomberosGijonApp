@@ -880,6 +880,46 @@ function goToHome() {
     renderDashboard();
 }
 
+// --- LÓGICA DE AYUDA PARA INSTALACIÓN (PWA) ---
+function mostrarGuiaInstalacion() {
+    // Si ya está instalada (modo standalone), no mostramos nada
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isAndroid = /Android/.test(navigator.userAgent);
+    
+    let mensaje = "";
+    if (isIOS) {
+        mensaje = "Para instalar: pulsa el icono 'Compartir' ⎋ y luego 'Añadir a pantalla de inicio' ⊕";
+    } else if (isAndroid) {
+        mensaje = "Para instalar: pulsa los tres puntos ⋮ y luego 'Instalar aplicación' o 'Añadir a pantalla de inicio'";
+    }
+
+    if (mensaje) {
+        const promo = document.createElement('div');
+        promo.style = `
+            position: fixed; bottom: 20px; left: 20px; right: 20px; 
+            background: #333; color: white; padding: 15px; 
+            border-radius: 10px; z-index: 10000; font-size: 0.9em;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: flex; 
+            justify-content: space-between; align-items: center;
+            border-left: 5px solid #AA1915;
+        `;
+        promo.innerHTML = `
+            <span>${mensaje}</span>
+            <button onclick="this.parentElement.remove()" style="background:none; border:none; color:white; font-weight:bold; padding-left:10px;">X</button>
+        `;
+        document.body.appendChild(promo);
+        
+        // Se quita solo a los 10 segundos para no molestar mucho
+        setTimeout(() => promo.remove(), 10000);
+    }
+}
+
+// Ejecutar la guía después de cargar la app
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(mostrarGuiaInstalacion, 3000); // Esperamos 3 segundos tras el inicio
+});
 
 
 
