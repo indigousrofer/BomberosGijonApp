@@ -1,32 +1,23 @@
 // 1. Configuración e Inicialización
-const APP_VERSION = 'v29'; // <--- DEBE COINCIDIR CON EL SERVICE WORKER
+const APP_VERSION = 'v30'; // <--- DEBE COINCIDIR CON EL SERVICE-WORKER
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let navigationHistory = [];
-let mesActualCal = new Date().getMonth();
-let añoActualCal = new Date().getFullYear();
-let turnoSeleccionadoCal = 'T2';
-
-const appContent = document.getElementById('app-content');
-const backButton = document.getElementById('back-button');
-
 let FIREBASE_DATA = { VEHICLES: [], DETAILS: {}, MATERIALS: {} };
 
-// 2. Punto de inicio y Detector de Versiones Inteligente
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp(); 
     
     if ('serviceWorker' in navigator) {
         // Solo mostramos el aviso si la versión guardada es distinta a la actual
         const savedVersion = localStorage.getItem('app_version');
-        
         if (savedVersion && savedVersion !== APP_VERSION) {
             showUpdateNotice();
         }
 
+        // Si el Service Worker cambia, preparamos la marca de actualización
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-            // Si el SW cambia, guardamos la nueva versión para la próxima carga
             localStorage.setItem('app_version', APP_VERSION);
         });
     }
@@ -36,14 +27,15 @@ function showUpdateNotice() {
     if (document.getElementById('update-banner')) return;
     const aviso = document.createElement('div');
     aviso.id = 'update-banner';
-    aviso.style = "position:fixed; bottom:20px; left:20px; right:20px; background:#AA1915; color:white; padding:20px; border-radius:12px; z-index:99999; text-align:center; font-weight:bold; border:2px solid white;";
-    aviso.innerHTML = `ACTUALIZACIÓN DISPONIBLE<br><button onclick="forzarActualizacion()" style="margin-top:10px; padding:10px 20px; border-radius:8px; border:none; background:white; color:#AA1915; font-weight:bold;">ACTUALIZAR</button>`;
+    // Estilo superior para que no estorbe abajo
+    aviso.style = "position:fixed; top:70px; left:10px; right:10px; background:#AA1915; color:white; padding:15px; border-radius:8px; z-index:10005; text-align:center; font-weight:bold; border:2px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.3);";
+    aviso.innerHTML = `NUEVA VERSIÓN LISTA <button onclick="forzarActualizacion()" style="margin-left:10px; padding:5px 15px; border-radius:5px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer;">ACTUALIZAR</button>`;
     document.body.appendChild(aviso);
 }
 
 function forzarActualizacion() {
-    localStorage.setItem('app_version', APP_VERSION);
-    window.location.reload(true);
+    localStorage.setItem('app_version', APP_VERSION); // Guardamos que ya actualizamos
+    window.location.reload(true); // Forzamos recarga del servidor
 }
 
 async function initializeApp() {
@@ -55,23 +47,18 @@ async function initializeApp() {
 // 3. Función renderResource (Visor GitHub + Descarga Drive)
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
-        // 1. Obtener la URL de descarga (Google Drive) desde los metadatos del material
         const material = FIREBASE_DATA.MATERIALS[materialId];
         const docEntry = material.docs.find(d => d.url === url);
-        
-        // Si existe 'url_download' (Drive) la usamos, si no, usamos la 'url' normal (GitHub)
         let downloadUrl = (docEntry && docEntry.url_download) ? docEntry.url_download : url;
 
-        // Si es de Drive, la convertimos a formato de descarga directa para la lupa
         if (downloadUrl.includes('drive.google.com/file/d/')) {
             const fileId = downloadUrl.split('/d/')[1].split('/')[0];
             downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
         }
 
         const contentPdf = `
-            <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 65px); background:#f0f0f0; overflow:hidden;">
-                
-                <iframe src="${url}" 
+            <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 60px); background:#f0f0f0; overflow:hidden;">
+                <iframe src="${window.location.origin + window.location.pathname.replace('index.html', '') + url}" 
                         type="application/pdf"
                         style="width:100%; height:100%; border:none; display:block;">
                 </iframe>
@@ -81,7 +68,7 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
                    rel="noopener noreferrer" 
                    style="position:fixed; bottom:30px; right:20px; background:#AA1915; color:white; 
                           padding:15px 25px; border-radius:50px; text-decoration:none; font-weight:bold; 
-                          box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:9999; display:flex; align-items:center; gap:10px; border:2px solid white;">
+                          box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:10px; border:2px solid white;">
                    <span>DESCARGAR / LUPA</span> 🔍
                 </a>
             </div>
@@ -89,8 +76,7 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
         render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
         return;
     }
-
-    // Lógica para fotos y vídeos
+    // (Resto de la lógica de fotos/videos igual)
     let content = '';
     if (type === 'video' || type === 'video_mp4') {
         content = `<div class="video-container centered-resource"><iframe src="${url}" frameborder="0" allowfullscreen></iframe></div>`;
@@ -983,6 +969,7 @@ function forzarActualizacion() {
         window.location.reload(true);
     }
 }
+
 
 
 
