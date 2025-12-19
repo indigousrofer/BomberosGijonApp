@@ -17,19 +17,25 @@ self.addEventListener('install', event => {
   );
 });
 
-// Estrategia de respuesta: Caché con actualización en segundo plano
+/// Estrategia: Caché con actualización en segundo plano (Stale-while-revalidate)
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then(response => {
-      // Devolvemos caché si existe, pero lanzamos la petición a la red para actualizarla
+    caches.match(event.request).then(cachedResponse => {
+      // 1. Si está en caché, la devolvemos inmediatamente para que la app vuele
       const fetchPromise = fetch(event.request).then(networkResponse => {
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, networkResponse.clone());
-        });
-        return networkResponse;
+        // IMPORTANTE: Comprobar que la respuesta sea válida antes de cachear
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          const responseToCache = networkResponse.clone(); // CLONAMOS PRIMERO
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseToCache); // GUARDAMOS EL CLON
+          });
+        }
+        return networkResponse; // DEVOLVEMOS LA ORIGINAL
+      }).catch(() => {
+        // Si falla la red (offline total) no pasa nada, ya devolvimos la caché arriba
       });
-      return response || fetchPromise;
+
+      return cachedResponse || fetchPromise;
     })
   );
 });
-
