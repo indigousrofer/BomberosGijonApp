@@ -1,4 +1,5 @@
-// 1. Configuración e Inicialización Única
+// 1. Configuración e Inicialización
+const APP_VERSION = 'v25'; // <--- DEBE COINCIDIR CON EL SERVICE WORKER
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -12,21 +13,21 @@ const backButton = document.getElementById('back-button');
 
 let FIREBASE_DATA = { VEHICLES: [], DETAILS: {}, MATERIALS: {} };
 
-// 2. Punto de inicio único
+// 2. Punto de inicio y Detector de Versiones Inteligente
 document.addEventListener('DOMContentLoaded', () => {
-    const initialState = { level: 0 };
-    history.replaceState(initialState, "Bomberos Gijón");
-    
     initializeApp(); 
-    setTimeout(mostrarGuiaInstalacion, 3000);
-
-    // Sistema de detección de versiones mejorado para evitar bucles
+    
     if ('serviceWorker' in navigator) {
+        // Solo mostramos el aviso si la versión guardada es distinta a la actual
+        const savedVersion = localStorage.getItem('app_version');
+        
+        if (savedVersion && savedVersion !== APP_VERSION) {
+            showUpdateNotice();
+        }
+
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-            // Solo avisamos si la página ya estaba siendo controlada por un SW anterior
-            if (navigator.serviceWorker.controller) {
-                showUpdateNotice();
-            }
+            // Si el SW cambia, guardamos la nueva versión para la próxima carga
+            localStorage.setItem('app_version', APP_VERSION);
         });
     }
 });
@@ -35,12 +36,13 @@ function showUpdateNotice() {
     if (document.getElementById('update-banner')) return;
     const aviso = document.createElement('div');
     aviso.id = 'update-banner';
-    aviso.style = "position:fixed; bottom:20px; left:20px; right:20px; background:#AA1915; color:white; padding:20px; border-radius:12px; z-index:99999; text-align:center; font-weight:bold; border:2px solid white; box-shadow: 0 5px 20px rgba(0,0,0,0.5);";
-    aviso.innerHTML = `NUEVA VERSIÓN LISTA EN GIJÓN<br><button onclick="forzarActualizacion()" style="margin-top:10px; padding:10px 20px; border-radius:8px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer;">ACTUALIZAR AHORA</button>`;
+    aviso.style = "position:fixed; bottom:20px; left:20px; right:20px; background:#AA1915; color:white; padding:20px; border-radius:12px; z-index:99999; text-align:center; font-weight:bold; border:2px solid white;";
+    aviso.innerHTML = `ACTUALIZACIÓN DISPONIBLE<br><button onclick="forzarActualizacion()" style="margin-top:10px; padding:10px 20px; border-radius:8px; border:none; background:white; color:#AA1915; font-weight:bold;">ACTUALIZAR</button>`;
     document.body.appendChild(aviso);
 }
 
 function forzarActualizacion() {
+    localStorage.setItem('app_version', APP_VERSION);
     window.location.reload(true);
 }
 
@@ -50,25 +52,27 @@ async function initializeApp() {
     renderDashboard();
 }
 
-// 3. Renderizado de Recursos con Visor, Carga y Lupa
+// 3. Función renderResource (Visor GitHub + Descarga Drive)
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
+        // Buscamos si es enlace de Drive para el botón de descarga
         let downloadUrl = url;
         if (url.includes('drive.google.com/file/d/')) {
             const fileId = url.split('/d/')[1].split('/')[0];
             downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
         }
 
-        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+        // Si usas GitHub para el visor interno, cámbialo aquí si es necesario
+        const visorUrl = url; 
 
         const contentPdf = `
             <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 60px); background:#f0f0f0; overflow:hidden;">
                 <div id="pdf-loader" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; z-index: 5;">
                     <div class="loader"></div>
-                    <p style="margin-top:10px; color:#666; font-weight:bold;">Abriendo manual...</p>
+                    <p style="margin-top:10px; color:#666; font-weight:bold;">Cargando visor...</p>
                 </div>
 
-                <iframe src="${googleViewerUrl}" 
+                <iframe src="${visorUrl}" 
                         style="width:100%; height:100%; border:none; position:relative; z-index:10;" 
                         onload="document.getElementById('pdf-loader').style.display='none';">
                 </iframe>
@@ -978,6 +982,7 @@ function forzarActualizacion() {
         window.location.reload(true);
     }
 }
+
 
 
 
