@@ -536,28 +536,24 @@ function showMaterialDetails(materialId, isBack = false) {
 /// ---------------------------------------------------------- ///
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
-        // Intentamos la apertura directa primero
-        const win = window.open(url, '_blank');
-        
-        // Si el navegador lo bloquea o lo abre "dentro", ofrecemos el botón de salto manual
         const contentPdf = `
             <div style="text-align:center; padding:40px 20px;">
                 <div style="font-size: 4em; margin-bottom: 20px;">📄</div>
-                <h3 style="color:#333;">Abrir Manual Técnico</h3>
-                <p style="color:#666; margin-bottom: 30px;">Para usar la <b>lupa de búsqueda</b>, abre el archivo en el visor externo:</p>
+                <h3 style="color:#333;">Manual Técnico</h3>
+                <p style="color:#666; margin-bottom: 30px;">Para usar la <b>lupa de búsqueda</b>, debemos abrir el manual fuera de la App.</p>
                 
-                <a href="${url}" target="_blank" rel="noopener noreferrer" 
+                <a href="${url}" download="${resourceName}.pdf" target="_blank" rel="noopener noreferrer" 
                    style="display:block; background:#AA1915; color:white; padding:18px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:1.1em; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                   ABRIR CON VISOR EXTERNO 🔍
+                   DESCARGAR Y BUSCAR CON LUPA 🔍
                 </a>
                 
                 <p style="margin-top:30px; font-size:0.85em; color:#888;">
-                   (Si se abre aquí, pulsa el icono de compartir o los tres puntos y elige "Abrir en el navegador")
+                   Una vez descargado, ábrelo con Drive o Adobe para buscar palabras clave.
                 </p>
             </div>
         `;
         render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
-        return; 
+        return;
     }
     
     let content = '';
@@ -935,6 +931,7 @@ if ('serviceWorker' in navigator) {
         document.body.appendChild(reloadNotice);
     });
 }
+
 
 
 
