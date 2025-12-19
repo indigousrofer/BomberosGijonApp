@@ -9,6 +9,15 @@ const urlsToCache = [
   './images/icon-192.png'
 ];
 
+// Fuerza al nuevo Service Worker a tomar el control inmediatamente
+self.addEventListener('install', event => {
+  self.skipWaiting(); 
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(clients.claim()); 
+});
+
 // Instalación del Service Worker
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -41,6 +50,7 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
 
 
 
