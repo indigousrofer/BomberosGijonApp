@@ -536,40 +536,46 @@ function showMaterialDetails(materialId, isBack = false) {
 /// ---------------------------------------------------------- ///
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
-        // Usamos el visor de Google para forzar una visualización que permita saltar al visor nativo
-        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-        
         const contentPdf = `
-            <div style="text-align:center; padding:20px;">
-                <div style="background:#f0f0f0; padding:15px; border-radius:10px; margin-bottom:20px; border-left:5px solid #AA1915;">
-                    <p style="margin:0; font-size:0.9em;">Para usar la <b>LUPA 🔍</b>, pulsa el botón de abajo y luego selecciona <b>"Abrir en el navegador"</b> en el menú de arriba (⋮).</p>
-                </div>
+            <div style="text-align:center; padding:40px 20px;">
+                <div style="font-size: 5em; margin-bottom: 20px;">📄</div>
+                <h2 style="color:#AA1915;">Manual de Material</h2>
+                <p style="color:#333; font-size:1.1em; line-height:1.4; margin-bottom:30px;">
+                    Para poder usar la <b>LUPA DE BÚSQUEDA 🔍</b>, debes abrir este archivo con el visor de tu teléfono.
+                </p>
                 
-                <a href="${url}" target="_blank" rel="noopener noreferrer" 
-                   style="display:block; background:#AA1915; color:white; padding:18px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:1.1em; box-shadow: 0 4px 10px rgba(0,0,0,0.2); margin-bottom:20px;">
-                   ABRIR PDF EXTERNO 🔍
+                <a href="${url}" 
+                   download="${resourceName}.pdf" 
+                   target="_blank" 
+                   rel="noopener noreferrer" 
+                   style="display:inline-block; background:#AA1915; color:white; padding:20px 30px; border-radius:12px; text-decoration:none; font-weight:bold; font-size:1.2em; box-shadow: 0 4px 15px rgba(170,25,21,0.3); border: 2px solid #8a1411;">
+                   ABRIR CON LUPA 🔍
                 </a>
-
-                <iframe src="${googleViewerUrl}" style="width:100%; height:500px; border:1px solid #ccc; border-radius:8px;"></iframe>
+                
+                <div style="margin-top:40px; padding:15px; background:#f9f9f9; border-radius:8px; border:1px solid #eee; font-size:0.9em; color:#666;">
+                    <p><b>Instrucciones:</b> Al pulsar el botón, el archivo se descargará o se abrirá en una pestaña nueva. Pulsa en los tres puntos (⋮) o en el icono de compartir y selecciona <b>"Abrir en el navegador"</b> o <b>"Abrir con..."</b>.</p>
+                </div>
             </div>
         `;
         render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
         return;
     }
 
-    // ... Resto del código (fotos y vídeos)
-    let content = '';
-    if (type === 'video') {
-        content = `<div class="video-container centered-resource"><iframe src="${url}" frameborder="0" allowfullscreen></iframe></div>`;
-    } else if (type === 'video_mp4') {
-        content = `<div class="video-container centered-resource"><video controls autoplay><source src="${url}" type="video/mp4"></video></div>`;
+    // Lógica para fotos y vídeos
+    let resourceHTML = '';
+    if (type === 'video' || type === 'video_mp4') {
+        const videoSrc = type === 'video' ? url : url;
+        resourceHTML = `
+            <div class="video-container centered-resource">
+                ${type === 'video' 
+                    ? `<iframe src="${url}" frameborder="0" allowfullscreen></iframe>`
+                    : `<video controls autoplay style="width:100%;"><source src="${url}" type="video/mp4"></video>`}
+            </div>`;
     } else if (type === 'photo') {
-        content = `<img src="${url}" class="centered-resource" style="box-shadow: 0 4px 15px rgba(0,0,0,0.4);">`;
-    } else {
-        content = `<p class="centered-resource">Recurso no compatible.</p>`;
+        resourceHTML = `<img src="${url}" class="centered-resource" style="box-shadow: 0 4px 15px rgba(0,0,0,0.4);">`;
     }
-    
-    const finalContent = `<div class="resource-container-wrapper">${content}</div>`;
+
+    const finalContent = `<div class="resource-container-wrapper">${resourceHTML}</div>`;
     render(finalContent, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
 }
 
@@ -933,6 +939,7 @@ if ('serviceWorker' in navigator) {
         document.body.appendChild(reloadNotice);
     });
 }
+
 
 
 
