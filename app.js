@@ -538,18 +538,22 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
         const contentPdf = `
             <div style="text-align:center; padding:40px 20px;">
-                <div style="font-size: 5em; margin-bottom: 20px;">📄</div>
-                <h2 style="color:#AA1915;">Manual de Material</h2>
+                <div style="font-size: 5em; margin-bottom: 20px;">📥</div>
+                <h2 style="color:#AA1915;">Manual del Material</h2>
                 <p style="color:#333; margin-bottom:30px;">
-                    Para usar la <b>LUPA 🔍</b>, abre el visor externo.
+                    Para usar la <b>LUPA 🔍</b>, descarga el manual y ábrelo con el visor de tu móvil.
                 </p>
                 
                 <a href="${url}" 
+                   download="${resourceName}.pdf" 
                    target="_blank" 
-                   rel="noopener noreferrer" 
-                   style="display:inline-block; background:#AA1915; color:white; padding:20px 30px; border-radius:12px; text-decoration:none; font-weight:bold;">
-                   ABRIR CON LUPA 🔍
+                   style="display:inline-block; background:#AA1915; color:white; padding:20px 30px; border-radius:12px; text-decoration:none; font-weight:bold; font-size:1.1em; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                   DESCARGAR MANUAL 🔍
                 </a>
+
+                <p style="margin-top:40px; font-size:0.85em; color:#888; line-height:1.4;">
+                    Una vez pulsado, busca la notificación de "Descarga completa" y abre el archivo.
+                </p>
             </div>
         `;
         render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
@@ -934,6 +938,7 @@ if ('serviceWorker' in navigator) {
         document.body.appendChild(reloadNotice);
     });
 }
+
 
 
 
