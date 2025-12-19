@@ -1,5 +1,5 @@
 // 1. DEFINICIÓN DE VARIABLES GLOBALES E INICIALIZACIÓN
-const APP_VERSION = 'v33'; 
+const APP_VERSION = 'v34'; 
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -947,6 +947,7 @@ function forzarActualizacion() {
         window.location.reload(true);
     }
 }
+
 
 
 
