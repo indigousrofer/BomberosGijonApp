@@ -1,4 +1,5 @@
-// 1. Configuración e Inicialización Única
+// 1. DEFINICIÓN DE VARIABLES GLOBALES E INICIALIZACIÓN
+const APP_VERSION = 'v33'; 
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -10,76 +11,57 @@ let turnoSeleccionadoCal = 'T2';
 const appContent = document.getElementById('app-content');
 const backButton = document.getElementById('back-button');
 
-let FIREBASE_DATA = {
-    VEHICLES: [],
-    DETAILS: {},
-    MATERIALS: {}
-};
+let FIREBASE_DATA = { VEHICLES: [], DETAILS: {}, MATERIALS: {} };
 
-// 2. Punto de inicio único
+// 2. PUNTO DE INICIO Y GESTIÓN DE PWA
 document.addEventListener('DOMContentLoaded', () => {
-    const initialState = { level: 0 };
-    history.replaceState(initialState, "Bomberos Gijón");
-    
-    initializeApp(); 
-    setTimeout(mostrarGuiaInstalacion, 3000);
+    if (!appContent || !backButton) return;
 
-    // Sistema de detección de versiones mejorado para evitar bucles
+    initializeApp(); 
+    
     if ('serviceWorker' in navigator) {
+        const savedVersion = localStorage.getItem('app_version');
+        if (savedVersion && savedVersion !== APP_VERSION) {
+            showUpdateNotice();
+        }
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-            // Solo avisamos si la página ya estaba siendo controlada por un SW anterior
-            if (navigator.serviceWorker.controller) {
-                showUpdateNotice();
-            }
+            localStorage.setItem('app_version', APP_VERSION);
         });
     }
 });
 
+// 3. CARGA DE DATOS Y ACTUALIZACIÓN
 async function initializeApp() {
-    render(`
-        <div style="text-align:center; padding-top: 50px;">
-            <p>Cargando datos del inventario desde la central...</p>
-            <div class="loader"></div> 
-        </div>`, 'Cargando...', { level: -1 }, false);
-    
+    render(`<div style="text-align:center; padding-top: 50px;"><p>Sincronizando Gijón...</p><div class="loader"></div></div>`, 'Cargando...', { level: -1 }, false);
     await loadFirebaseData();
     renderDashboard();
 }
 
 async function loadFirebaseData() {
     try {
-        // 1. Cargar VEHICLES
         const vehiclesSnapshot = await db.collection("vehicles").get();
         FIREBASE_DATA.VEHICLES = vehiclesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // 2. Cargar TURNOS_CONFIG (Asumiendo que tienes una colección 'config')
-        // *Este paso es opcional, si mantienes TURNOS_CONFIG en data.js, sáltalo.*
-        
-        // 3. Cargar MATERIALES (simplificado, asume que DETAILS está en materiales)
         const materialsSnapshot = await db.collection("materials").get();
-        materialsSnapshot.docs.forEach(doc => {
-            FIREBASE_DATA.MATERIALS[doc.id] = doc.data();
-        });
+        materialsSnapshot.docs.forEach(doc => { FIREBASE_DATA.MATERIALS[doc.id] = doc.data(); });
 
-		// 4. Cargar DETAILS (Hotspots/Armarios. Es más complejo, lo cargamos como una colección)
-        // Por la estructura compleja (B12 -> B12-dcha -> Armarios), usaremos una aproximación simple
-        // Si tienes una colección 'details', la cargarías así:
         const detailsSnapshot = await db.collection("details").get();
-        detailsSnapshot.docs.forEach(doc => {
-            FIREBASE_DATA.DETAILS[doc.id] = doc.data();
-        });
+        detailsSnapshot.docs.forEach(doc => { FIREBASE_DATA.DETAILS[doc.id] = doc.data(); });
+    } catch (e) { console.error("Error Firebase:", e); }
+}
 
-        console.log("Datos de Firebase cargados con éxito.");
+function showUpdateNotice() {
+    if (document.getElementById('update-banner')) return;
+    const aviso = document.createElement('div');
+    aviso.id = 'update-banner';
+    aviso.style = "position:fixed; top:70px; left:10px; right:10px; background:#AA1915; color:white; padding:15px; border-radius:8px; z-index:10005; text-align:center; font-weight:bold; border:2px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.3);";
+    aviso.innerHTML = `ACTUALIZACIÓN LISTA <button onclick="forzarActualizacion()" style="margin-left:10px; padding:5px 15px; border-radius:5px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer;">ACTUALIZAR</button>`;
+    document.body.appendChild(aviso);
+}
 
-    } catch (e) {
-        console.error("Fallo al cargar datos de Firebase:", e);
-        // Si falla, mostramos un error y usamos los datos vacíos.
-        render(`
-            <div style="text-align:center; padding-top: 50px; color: red;">
-                <h4>ERROR DE CONEXIÓN</h4>
-                <p>No se pudieron cargar los datos de inventario. Verifica tu conexión o la configuración de Firebase.</p>
-            </div>`, 'ERROR', { level: -1 }, false);
-    }
+function forzarActualizacion() {
+    localStorage.setItem('app_version', APP_VERSION);
+    window.location.reload(true);
 }
 
 function navigateToSection(id) {
@@ -546,37 +528,25 @@ function showMaterialDetails(materialId, isBack = false) {
 /// ---------------------------------------------------------- ///
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
-        // Preparar URL de descarga directa de Google Drive
-        let downloadUrl = url;
-        if (url.includes('drive.google.com/file/d/')) {
-            const fileId = url.split('/d/')[1].split('/')[0];
+        const material = FIREBASE_DATA.MATERIALS[materialId];
+        const docEntry = material.docs.find(d => d.url === url);
+        let downloadUrl = (docEntry && docEntry.url_download) ? docEntry.url_download : url;
+
+        if (downloadUrl.includes('drive.google.com/file/d/')) {
+            const fileId = downloadUrl.split('/d/')[1].split('/')[0];
             downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
         }
 
-        // Usamos el visor de Google Docs
-        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+        const absolutePdfUrl = window.location.origin + window.location.pathname.replace('index.html', '') + url;
 
         const contentPdf = `
-            <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 60px); background:#f0f0f0; overflow:hidden;">
-                
-                <div id="pdf-loader" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; z-index: 5;">
-                    <div class="loader"></div>
-                    <p style="margin-top:10px; color:#666; font-weight:bold;">Abriendo manual técnico...</p>
-                </div>
-
-                <iframe src="${googleViewerUrl}" 
-                        style="width:100%; height:100%; border:none; position:relative; z-index:10;" 
-                        onload="document.getElementById('pdf-loader').style.display='none';">
-                </iframe>
-                
+            <div class="resource-container-wrapper" style="height: calc(100vh - 65px); width: 100%; position: relative; background: #525659;">
+                <embed src="${absolutePdfUrl}" type="application/pdf" width="100%" height="100%" style="border: none;">
                 <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" 
-                   style="position:fixed; bottom:30px; right:20px; background:#AA1915; color:white; 
-                          padding:15px 25px; border-radius:50px; text-decoration:none; font-weight:bold; 
-                          box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:10px; border:2px solid white;">
-                   <span>DESCARGAR / LUPA</span> 🔍
+                   style="position:fixed; bottom:25px; right:15px; background:#AA1915; color:white; padding:12px 20px; border-radius:50px; text-decoration:none; font-weight:bold; box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:8px; border:2px solid white;">
+                   DESCARGAR PDF 🔍
                 </a>
-            </div>
-        `;
+            </div>`;
         render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
         return;
     }
@@ -977,6 +947,7 @@ function forzarActualizacion() {
         window.location.reload(true);
     }
 }
+
 
 
 
