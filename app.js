@@ -10,11 +10,7 @@ let turnoSeleccionadoCal = 'T2';
 const appContent = document.getElementById('app-content');
 const backButton = document.getElementById('back-button');
 
-let FIREBASE_DATA = {
-    VEHICLES: [],
-    DETAILS: {},
-    MATERIALS: {}
-};
+let FIREBASE_DATA = { VEHICLES: [], DETAILS: {}, MATERIALS: {} };
 
 // 2. Punto de inicio único
 document.addEventListener('DOMContentLoaded', () => {
@@ -35,15 +31,68 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+function showUpdateNotice() {
+    if (document.getElementById('update-banner')) return;
+    const aviso = document.createElement('div');
+    aviso.id = 'update-banner';
+    aviso.style = "position:fixed; bottom:20px; left:20px; right:20px; background:#AA1915; color:white; padding:20px; border-radius:12px; z-index:99999; text-align:center; font-weight:bold; border:2px solid white; box-shadow: 0 5px 20px rgba(0,0,0,0.5);";
+    aviso.innerHTML = `NUEVA VERSIÓN LISTA EN GIJÓN<br><button onclick="forzarActualizacion()" style="margin-top:10px; padding:10px 20px; border-radius:8px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer;">ACTUALIZAR AHORA</button>`;
+    document.body.appendChild(aviso);
+}
+
+function forzarActualizacion() {
+    window.location.reload(true);
+}
+
 async function initializeApp() {
-    render(`
-        <div style="text-align:center; padding-top: 50px;">
-            <p>Cargando datos del inventario desde la central...</p>
-            <div class="loader"></div> 
-        </div>`, 'Cargando...', { level: -1 }, false);
-    
+    render(`<div style="text-align:center; padding-top: 50px;"><p>Cargando inventario de Gijón...</p><div class="loader"></div></div>`, 'Cargando...', { level: -1 }, false);
     await loadFirebaseData();
     renderDashboard();
+}
+
+// 3. Renderizado de Recursos con Visor, Carga y Lupa
+function renderResource(materialId, url, type, resourceName, isBack = false) {
+    if (type === 'pdf') {
+        let downloadUrl = url;
+        if (url.includes('drive.google.com/file/d/')) {
+            const fileId = url.split('/d/')[1].split('/')[0];
+            downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+        }
+
+        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+
+        const contentPdf = `
+            <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 60px); background:#f0f0f0; overflow:hidden;">
+                <div id="pdf-loader" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; z-index: 5;">
+                    <div class="loader"></div>
+                    <p style="margin-top:10px; color:#666; font-weight:bold;">Abriendo manual...</p>
+                </div>
+
+                <iframe src="${googleViewerUrl}" 
+                        style="width:100%; height:100%; border:none; position:relative; z-index:10;" 
+                        onload="document.getElementById('pdf-loader').style.display='none';">
+                </iframe>
+                
+                <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" 
+                   style="position:fixed; bottom:30px; right:20px; background:#AA1915; color:white; 
+                          padding:15px 25px; border-radius:50px; text-decoration:none; font-weight:bold; 
+                          box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:10px; border:2px solid white;">
+                   <span>DESCARGAR / LUPA</span> 🔍
+                </a>
+            </div>
+        `;
+        render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
+        return;
+    }
+    
+    // Lógica para fotos y vídeos
+    let content = '';
+    if (type === 'video' || type === 'video_mp4') {
+        content = `<div class="video-container centered-resource"><iframe src="${url}" frameborder="0" allowfullscreen></iframe></div>`;
+    } else if (type === 'photo') {
+        content = `<img src="${url}" class="centered-resource">`;
+    }
+    render(`<div class="resource-container-wrapper">${content}</div>`, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
 }
 
 async function loadFirebaseData() {
@@ -543,54 +592,6 @@ function showMaterialDetails(materialId, isBack = false) {
 }
 
 /// --- NIVEL 6: Renderizado de Recurso a Pantalla Completa -- ///
-/// ---------------------------------------------------------- ///
-function renderResource(materialId, url, type, resourceName, isBack = false) {
-    if (type === 'pdf') {
-        // Preparar URL de descarga directa de Google Drive
-        let downloadUrl = url;
-        if (url.includes('drive.google.com/file/d/')) {
-            const fileId = url.split('/d/')[1].split('/')[0];
-            downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-        }
-
-        // Usamos el visor de Google Docs
-        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-
-        const contentPdf = `
-            <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 60px); background:#f0f0f0; overflow:hidden;">
-                
-                <div id="pdf-loader" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; z-index: 5;">
-                    <div class="loader"></div>
-                    <p style="margin-top:10px; color:#666; font-weight:bold;">Abriendo manual técnico...</p>
-                </div>
-
-                <iframe src="${googleViewerUrl}" 
-                        style="width:100%; height:100%; border:none; position:relative; z-index:10;" 
-                        onload="document.getElementById('pdf-loader').style.display='none';">
-                </iframe>
-                
-                <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" 
-                   style="position:fixed; bottom:30px; right:20px; background:#AA1915; color:white; 
-                          padding:15px 25px; border-radius:50px; text-decoration:none; font-weight:bold; 
-                          box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:10px; border:2px solid white;">
-                   <span>DESCARGAR / LUPA</span> 🔍
-                </a>
-            </div>
-        `;
-        render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
-        return;
-    }
-
-    // Lógica para otros recursos (fotos/vídeos)
-    let content = '';
-    if (type === 'video' || type === 'video_mp4') {
-        content = `<div class="video-container centered-resource"><iframe src="${url}" frameborder="0" allowfullscreen></iframe></div>`;
-    } else if (type === 'photo') {
-        content = `<img src="${url}" class="centered-resource">`;
-    }
-    
-    render(`<div class="resource-container-wrapper">${content}</div>`, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
-}
 /// SIMULACIÓN DE NIVEL 6 PARA EL PDF VIEWER
 function handleManualOpen(materialId, docName) {
     // 1. Abrimos el PDF en una pestaña externa (o visor nativo)
@@ -977,6 +978,7 @@ function forzarActualizacion() {
         window.location.reload(true);
     }
 }
+
 
 
 
