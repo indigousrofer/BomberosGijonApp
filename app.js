@@ -536,52 +536,44 @@ function showMaterialDetails(materialId, isBack = false) {
 /// ---------------------------------------------------------- ///
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
-        // Si el enlace ya viene de Drive, lo convertimos a descarga directa
-        // Si no, asumimos que ya has puesto el enlace de descarga en la base de datos
-        let finalUrl = url;
+        // Convertimos URL de Drive a descarga directa para el botón de la Lupa
+        let downloadUrl = url;
         if (url.includes('drive.google.com/file/d/')) {
             const fileId = url.split('/d/')[1].split('/')[0];
-            finalUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+            downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
         }
 
+        // Visor de Google para vista rápida dentro de la App
+        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+
         const contentPdf = `
-            <div style="text-align:center; padding:40px 20px;">
-                <div style="font-size: 5em; margin-bottom: 20px;">📄</div>
-                <h3 style="color:#333;">Manual del Material</h3>
-                <p style="color:#666; margin-bottom: 30px;">Para usar la <b>lupa de búsqueda 🔍</b>, descarga el manual en tu móvil.</p>
+            <div class="resource-container-wrapper" style="position:relative; height: 100vh; overflow:hidden;">
+                <iframe src="${googleViewerUrl}" style="width:100%; height:100%; border:none;"></iframe>
                 
-                <a href="${finalUrl}" target="_blank" rel="noopener noreferrer" 
-                   style="display:block; background:#AA1915; color:white; padding:18px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:1.1em; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                   DESCARGAR Y BUSCAR 🔍
+                <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" 
+                   style="position:fixed; bottom:30px; right:20px; background:#AA1915; color:white; 
+                          padding:15px 20px; border-radius:50px; text-decoration:none; font-weight:bold; 
+                          box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:10px; border:2px solid white;">
+                   <span>DESCARGAR / LUPA</span> 🔍
                 </a>
-                
-                <p style="margin-top:30px; font-size:0.85em; color:#888;">
-                   Al pulsar, el archivo se guardará en tu móvil. Ábrelo con Drive o Adobe para buscar texto.
-                </p>
             </div>
         `;
         render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
         return;
     }
 
-    // Lógica para fotos y vídeos
-    let resourceHTML = '';
+    // Lógica para otros recursos (fotos/vídeos)
+    let content = '';
     if (type === 'video' || type === 'video_mp4') {
-        const videoSrc = type === 'video' ? url : url;
-        resourceHTML = `
-            <div class="video-container centered-resource">
-                ${type === 'video' 
-                    ? `<iframe src="${url}" frameborder="0" allowfullscreen></iframe>`
-                    : `<video controls autoplay style="width:100%;"><source src="${url}" type="video/mp4"></video>`}
-            </div>`;
+        content = `<div class="video-container centered-resource">
+            <iframe src="${url}" frameborder="0" allowfullscreen></iframe>
+        </div>`;
     } else if (type === 'photo') {
-        resourceHTML = `<img src="${url}" class="centered-resource" style="box-shadow: 0 4px 15px rgba(0,0,0,0.4);">`;
+        content = `<img src="${url}" class="centered-resource">`;
     }
-
-    const finalContent = `<div class="resource-container-wrapper">${resourceHTML}</div>`;
-    render(finalContent, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
+    
+    render(`<div class="resource-container-wrapper">${content}</div>`, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
 }
-
 /// SIMULACIÓN DE NIVEL 6 PARA EL PDF VIEWER
 function handleManualOpen(materialId, docName) {
     // 1. Abrimos el PDF en una pestaña externa (o visor nativo)
@@ -921,33 +913,33 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(mostrarGuiaInstalacion, 2000); // Esperamos 3 segundos tras el inicio
 });
 
-// --- DETECTOR DE NUEVA VERSIÓN MEJORADO ---
+// --- SISTEMA DE ACTUALIZACIÓN SANEADO ---
 if ('serviceWorker' in navigator) {
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-        // Evitamos que se dispare varias veces o al cargar por primera vez
-        if (refreshing) return;
-        
-        // Solo avisamos si ya había un "controlador" previo (una versión antigua funcionando)
-        if (navigator.serviceWorker.controller) {
-            refreshing = true;
-            const reloadNotice = document.createElement('div');
-            reloadNotice.style = `
-                position: fixed; bottom: 20px; left: 20px; right: 20px; 
-                background: #AA1915; color: white; padding: 18px; 
-                border-radius: 12px; z-index: 99999; text-align: center; 
-                box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-weight: bold;
-                border: 2px solid white;
-            `;
-            reloadNotice.innerHTML = `
-                ACTUALIZACIÓN DISPONIBLE <br>
-                <button onclick="window.location.reload()" style="margin-top:10px; padding:8px 20px; border-radius:8px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer;">
-                    ACTUALIZAR AHORA
-                </button>
-            `;
-            document.body.appendChild(reloadNotice);
+    navigator.serviceWorker.ready.then(registration => {
+        // Si hay un SW esperando al abrir, avisamos
+        if (registration.waiting) {
+            showUpdateNotice();
         }
+        
+        // Escuchamos si aparece uno nuevo mientras la app está abierta
+        registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    showUpdateNotice();
+                }
+            });
+        });
     });
+}
+
+function showUpdateNotice() {
+    if (document.getElementById('update-banner')) return; // Evitar duplicados
+    const aviso = document.createElement('div');
+    aviso.id = 'update-banner';
+    aviso.style = "position:fixed; bottom:20px; left:20px; right:20px; background:#AA1915; color:white; padding:20px; border-radius:12px; z-index:99999; text-align:center; font-weight:bold; border:2px solid white; box-shadow: 0 5px 20px rgba(0,0,0,0.5);";
+    aviso.innerHTML = `NUEVA VERSIÓN DISPONIBLE <br><button onclick="window.location.reload()" style="margin-top:10px; padding:10px 20px; border-radius:8px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer;">ACTUALIZAR AHORA</button>`;
+    document.body.appendChild(aviso);
 }
 
 
