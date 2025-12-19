@@ -1,5 +1,5 @@
 // 1. Configuración e Inicialización
-const APP_VERSION = 'v30'; // <--- DEBE COINCIDIR CON EL SERVICE-WORKER
+const APP_VERSION = 'bomberos-v30'; // <--- DEBE COINCIDIR CON EL SERVICE-WORKER
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -969,6 +969,7 @@ function forzarActualizacion() {
         window.location.reload(true);
     }
 }
+
 
 
 
