@@ -28,17 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initializeApp() {
-    render(`
-        <div style="text-align:center; padding-top: 50px;">
-            <p>Cargando datos del inventario...</p>
-            <div class="loader"></div> 
-        </div>`, 'Cargando...', { level: -1 }, false);
-    
-    await loadFirebaseData();
-    renderDashboard();
-}
-
-async function initializeApp() {
     // 1. Mostrar un mensaje de carga
     render(`
         <div style="text-align:center; padding-top: 50px;">
@@ -551,41 +540,36 @@ function showMaterialDetails(materialId, isBack = false) {
 /// --- NIVEL 6: Renderizado de Recurso a Pantalla Completa -- ///
 /// ---------------------------------------------------------- ///
 function renderResource(materialId, url, type, resourceName, isBack = false) {
-    // Si es un PDF, forzamos la apertura en un entorno externo
-    // Actualiza este bloque en tu función renderResource en app.js
-	if (type === 'pdf') {
-	    const link = document.createElement('a');
-	    link.href = url;
-	    link.target = '_blank';
-	    link.rel = 'noopener noreferrer';
-	    // Algunos navegadores móviles necesitan esto para no abrirlo en el mismo marco
-	    document.body.appendChild(link);
-	    link.click();
-	    link.remove();
-	    return;
-	}
+    if (type === 'pdf') {
+        // Creamos un enlace invisible
+        const link = document.createElement('a');
+        link.href = url;
+        // Estas tres líneas son la clave para "romper" el marco de la PWA
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.download = resourceName; 
+
+        // Lo añadimos al documento, simulamos el clic y lo borramos
+        document.body.appendChild(link);
+        link.click();
+        
+        // Pequeño truco: si el clic falla o se queda dentro, 
+        // usamos un timeout para intentar window.open como plan B
+        setTimeout(() => {
+            link.remove();
+        }, 100);
+        return; 
+    }
     
-    // ... resto del código (videos, fotos...)
-
     let content = '';
-
     if (type === 'video') {
-        content = `
-            <div class="video-container centered-resource">
-                <iframe src="${url}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-            </div>`;
+        content = `<div class="video-container centered-resource"><iframe src="${url}" frameborder="0" allowfullscreen></iframe></div>`;
     } else if (type === 'video_mp4') {
-        content = `
-            <div class="video-container centered-resource">
-                <video controls style="width: 100%; height: 100%; border-radius: 8px;" autoplay> 
-                    <source src="${url}" type="video/mp4">
-                    Tu navegador no soporta la etiqueta de video HTML5.
-                </video>
-            </div>`;
+        content = `<div class="video-container centered-resource"><video controls autoplay><source src="${url}" type="video/mp4"></video></div>`;
     } else if (type === 'photo') {
         content = `<img src="${url}" class="centered-resource" style="box-shadow: 0 4px 15px rgba(0,0,0,0.4);">`;
     } else {
-        content = `<p class="centered-resource">Tipo de recurso no compatible para el visor interno.</p>`;
+        content = `<p class="centered-resource">Recurso no compatible.</p>`;
     }
     
     const finalContent = `<div class="resource-container-wrapper">${content}</div>`;
@@ -930,6 +914,7 @@ function mostrarGuiaInstalacion() {
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(mostrarGuiaInstalacion, 3000); // Esperamos 3 segundos tras el inicio
 });
+
 
 
 
