@@ -552,17 +552,18 @@ function showMaterialDetails(materialId, isBack = false) {
 /// ---------------------------------------------------------- ///
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     // Si es un PDF, forzamos la apertura en un entorno externo
-    if (type === 'pdf') {
-        // 'noopener,noreferrer' ayuda a separar el proceso de la app
-        // En muchos móviles, esto disparará el selector de aplicaciones (Drive, Acrobat, etc.)
-        const pdfWindow = window.open(url, '_blank', 'noopener,noreferrer');
-        
-        // Si por alguna razón el navegador bloquea el popup, avisamos al usuario
-        if (!pdfWindow) {
-            alert("Por favor, permite las ventanas emergentes para abrir el manual.");
-        }
-        return; 
-    }
+    // Actualiza este bloque en tu función renderResource en app.js
+	if (type === 'pdf') {
+	    const link = document.createElement('a');
+	    link.href = url;
+	    link.target = '_blank';
+	    link.rel = 'noopener noreferrer';
+	    // Algunos navegadores móviles necesitan esto para no abrirlo en el mismo marco
+	    document.body.appendChild(link);
+	    link.click();
+	    link.remove();
+	    return;
+	}
     
     // ... resto del código (videos, fotos...)
 
@@ -929,6 +930,7 @@ function mostrarGuiaInstalacion() {
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(mostrarGuiaInstalacion, 3000); // Esperamos 3 segundos tras el inicio
 });
+
 
 
 
