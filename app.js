@@ -536,26 +536,28 @@ function showMaterialDetails(materialId, isBack = false) {
 /// ---------------------------------------------------------- ///
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
+        // Usamos el visor de Google para forzar una visualización que permita saltar al visor nativo
+        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+        
         const contentPdf = `
-            <div style="text-align:center; padding:40px 20px;">
-                <div style="font-size: 4em; margin-bottom: 20px;">📄</div>
-                <h3 style="color:#333;">Manual Técnico</h3>
-                <p style="color:#666; margin-bottom: 30px;">Para usar la <b>lupa de búsqueda</b>, debemos abrir el manual fuera de la App.</p>
+            <div style="text-align:center; padding:20px;">
+                <div style="background:#f0f0f0; padding:15px; border-radius:10px; margin-bottom:20px; border-left:5px solid #AA1915;">
+                    <p style="margin:0; font-size:0.9em;">Para usar la <b>LUPA 🔍</b>, pulsa el botón de abajo y luego selecciona <b>"Abrir en el navegador"</b> en el menú de arriba (⋮).</p>
+                </div>
                 
-                <a href="${url}" download="${resourceName}.pdf" target="_blank" rel="noopener noreferrer" 
-                   style="display:block; background:#AA1915; color:white; padding:18px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:1.1em; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                   DESCARGAR Y BUSCAR CON LUPA 🔍
+                <a href="${url}" target="_blank" rel="noopener noreferrer" 
+                   style="display:block; background:#AA1915; color:white; padding:18px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:1.1em; box-shadow: 0 4px 10px rgba(0,0,0,0.2); margin-bottom:20px;">
+                   ABRIR PDF EXTERNO 🔍
                 </a>
-                
-                <p style="margin-top:30px; font-size:0.85em; color:#888;">
-                   Una vez descargado, ábrelo con Drive o Adobe para buscar palabras clave.
-                </p>
+
+                <iframe src="${googleViewerUrl}" style="width:100%; height:500px; border:1px solid #ccc; border-radius:8px;"></iframe>
             </div>
         `;
         render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
         return;
     }
-    
+
+    // ... Resto del código (fotos y vídeos)
     let content = '';
     if (type === 'video') {
         content = `<div class="video-container centered-resource"><iframe src="${url}" frameborder="0" allowfullscreen></iframe></div>`;
@@ -931,6 +933,7 @@ if ('serviceWorker' in navigator) {
         document.body.appendChild(reloadNotice);
     });
 }
+
 
 
 
