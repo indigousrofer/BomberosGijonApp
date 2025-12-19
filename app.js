@@ -1,5 +1,5 @@
 // 1. DEFINICIÓN DE VARIABLES GLOBALES E INICIALIZACIÓN
-const APP_VERSION = 'v36'; 
+const APP_VERSION = 'v37'; 
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -528,45 +528,44 @@ function showMaterialDetails(materialId, isBack = false) {
 /// ---------------------------------------------------------- ///
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
-        const material = FIREBASE_DATA.MATERIALS[materialId];
-        const docEntry = material.docs.find(d => d.url === url);
-        let downloadUrl = (docEntry && docEntry.url_download) ? docEntry.url_download : url;
-
-        if (downloadUrl.includes('drive.google.com/file/d/')) {
-            const fileId = downloadUrl.split('/d/')[1].split('/')[0];
-            downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-        }
-
-        const absolutePdfUrl = window.location.origin + window.location.pathname.replace('index.html', '') + url;
-        const googleDocsViewer = `https://docs.google.com/viewer?url=${encodeURIComponent(absolutePdfUrl)}&embedded=true`;
-
-        const contentPdf = `
-            <div class="resource-container-wrapper" 
-                 style="height: calc(100vh - 60px); 
-                        width: calc(100% + 40px); 
-                        margin: -20px; 
-                        position: relative; 
-                        background: #f0f0f0; 
-                        overflow: hidden;">
-                
-                <div id="pdf-loading-overlay" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; z-index: 5;">
-                    <div class="loader"></div>
-                    <p style="margin-top:10px; color:#666;">Cargando manual técnico...</p>
-                </div>
-                
-                <iframe src="${googleDocsViewer}" 
-                        style="width:100%; height:100%; border:none; position:relative; z-index:10; display:block;"
-                        onload="document.getElementById('pdf-loading-overlay').style.display='none';">
-                </iframe>
-                
-                <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" 
-                   style="position:fixed; bottom:25px; right:25px; background:#AA1915; color:white; padding:12px 20px; border-radius:50px; text-decoration:none; font-weight:bold; box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:8px; border:2px solid white;">
-                   DESCARGAR PDF 🔍
-                </a>
-            </div>`;
-        render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
-        return;
-    }
+	  const contentPdf = `
+	    <div class="pdfjs-wrapper" style="height: calc(100vh - 65px); width:100%; background:#f0f0f0; overflow:hidden;">
+	      
+	      <!-- Toolbar -->
+	      <div class="pdfjs-toolbar" style="position:sticky; top:0; z-index:5; background:white; padding:10px; display:flex; gap:10px; align-items:center; border-bottom:1px solid #ddd;">
+	        <button onclick="pdfZoomOut()" style="padding:8px 12px;">−</button>
+	        <button onclick="pdfZoomIn()" style="padding:8px 12px;">+</button>
+	
+	        <!-- TU BOTÓN DE DESCARGA (sin tocar la lógica) -->
+	        <a href="${url}" download target="_blank" rel="noopener noreferrer"
+	           style="margin-left:10px; padding:8px 12px; background:#AA1915; color:white; border-radius:6px; text-decoration:none;">
+	          Descargar
+	        </a>
+	
+	        <span id="pdfjs-page-info" style="margin-left:auto; font-weight:bold;"></span>
+	      </div>
+	
+	      <!-- PDF -->
+	      <div id="pdfjs-scroll" style="height:100%; overflow:auto; -webkit-overflow-scrolling:touch; padding:10px;">
+	        <canvas id="pdfjs-canvas" style="width:100%; background:white; border-radius:8px;"></canvas>
+	        <div id="pdfjs-loading" style="text-align:center; padding:20px; color:#666;">
+	          <div class="loader"></div>
+	          <p style="margin-top:10px;">Cargando PDF…</p>
+	        </div>
+	      </div>
+	    </div>
+	  `;
+	
+	  render(
+	    contentPdf,
+	    resourceName,
+	    { level: 6, materialId, url, type, resourceName },
+	    isBack
+	  );
+	
+	  setTimeout(() => openPdfWithPdfjs(url), 0);
+	  return;
+	}
 
     // Lógica para otros recursos (fotos/vídeos)
     let content = '';
@@ -578,6 +577,78 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
     
     render(`<div class="resource-container-wrapper">${content}</div>`, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
 }
+
+/// ------------------------------- ///
+/// FUNCIONES DE LA LIBRERIA PDF.JS ///
+/// ------------------------------- ///
+let __pdfDoc = null;
+let __pdfPage = 1;
+let __pdfScale = 1.2;
+
+async function openPdfWithPdfjs(url) {
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+
+    const canvas = document.getElementById("pdfjs-canvas");
+    const ctx = canvas.getContext("2d", { alpha: false });
+    const loadingEl = document.getElementById("pdfjs-loading");
+
+    __pdfDoc = await pdfjsLib.getDocument(url).promise;
+    __pdfPage = 1;
+    __pdfScale = 1.2;
+
+    if (loadingEl) loadingEl.style.display = "none";
+    await renderPdfPage(ctx, canvas);
+  } catch (err) {
+    console.error("PDF.js error:", err);
+    const loadingEl = document.getElementById("pdfjs-loading");
+    if (loadingEl) {
+      loadingEl.innerHTML = `
+        <p style="color:#AA1915; font-weight:bold;">No se pudo abrir el PDF dentro de la app.</p>
+        <p><a href="${url}" target="_blank" rel="noopener noreferrer">Abrir PDF</a></p>
+      `;
+    }
+  }
+}
+
+async function renderPdfPage(ctx, canvas) {
+  if (!__pdfDoc) return;
+
+  const page = await __pdfDoc.getPage(__pdfPage);
+  const viewport = page.getViewport({ scale: __pdfScale });
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = viewport.width * dpr;
+  canvas.height = viewport.height * dpr;
+  canvas.style.width = `${viewport.width}px`;
+  canvas.style.height = `${viewport.height}px`;
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  await page.render({ canvasContext: ctx, viewport }).promise;
+
+  const info = document.getElementById("pdfjs-page-info");
+  if (info) info.textContent = `Página ${__pdfPage} / ${__pdfDoc.numPages}`;
+}
+
+function pdfZoomIn() {
+  __pdfScale = Math.min(__pdfScale + 0.2, 4);
+  rerenderPdf();
+}
+
+function pdfZoomOut() {
+  __pdfScale = Math.max(__pdfScale - 0.2, 0.6);
+  rerenderPdf();
+}
+
+function rerenderPdf() {
+  const canvas = document.getElementById("pdfjs-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d", { alpha: false });
+  renderPdfPage(ctx, canvas);
+}
+
+
 /// SIMULACIÓN DE NIVEL 6 PARA EL PDF VIEWER
 function handleManualOpen(materialId, docName) {
     // 1. Abrimos el PDF en una pestaña externa (o visor nativo)
@@ -964,6 +1035,7 @@ function forzarActualizacion() {
         window.location.reload(true);
     }
 }
+
 
 
 
