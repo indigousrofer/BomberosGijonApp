@@ -536,23 +536,27 @@ function showMaterialDetails(materialId, isBack = false) {
 /// ---------------------------------------------------------- ///
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
+        // Si el enlace ya viene de Drive, lo convertimos a descarga directa
+        // Si no, asumimos que ya has puesto el enlace de descarga en la base de datos
+        let finalUrl = url;
+        if (url.includes('drive.google.com/file/d/')) {
+            const fileId = url.split('/d/')[1].split('/')[0];
+            finalUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+        }
+
         const contentPdf = `
             <div style="text-align:center; padding:40px 20px;">
-                <div style="font-size: 5em; margin-bottom: 20px;">📥</div>
-                <h2 style="color:#AA1915;">Manual del Material</h2>
-                <p style="color:#333; margin-bottom:30px;">
-                    Para usar la <b>LUPA 🔍</b>, descarga el manual y ábrelo con el visor de tu móvil.
-                </p>
+                <div style="font-size: 5em; margin-bottom: 20px;">📄</div>
+                <h3 style="color:#333;">Manual del Material</h3>
+                <p style="color:#666; margin-bottom: 30px;">Para usar la <b>lupa de búsqueda 🔍</b>, descarga el manual en tu móvil.</p>
                 
-                <a href="${url}" 
-                   download="${resourceName}.pdf" 
-                   target="_blank" 
-                   style="display:inline-block; background:#AA1915; color:white; padding:20px 30px; border-radius:12px; text-decoration:none; font-weight:bold; font-size:1.1em; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-                   DESCARGAR MANUAL 🔍
+                <a href="${finalUrl}" target="_blank" rel="noopener noreferrer" 
+                   style="display:block; background:#AA1915; color:white; padding:18px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:1.1em; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                   DESCARGAR Y BUSCAR 🔍
                 </a>
-
-                <p style="margin-top:40px; font-size:0.85em; color:#888; line-height:1.4;">
-                    Una vez pulsado, busca la notificación de "Descarga completa" y abre el archivo.
+                
+                <p style="margin-top:30px; font-size:0.85em; color:#888;">
+                   Al pulsar, el archivo se guardará en tu móvil. Ábrelo con Drive o Adobe para buscar texto.
                 </p>
             </div>
         `;
@@ -917,27 +921,35 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(mostrarGuiaInstalacion, 2000); // Esperamos 3 segundos tras el inicio
 });
 
-// --- DETECTOR DE NUEVA VERSIÓN ---
+// --- DETECTOR DE NUEVA VERSIÓN MEJORADO ---
 if ('serviceWorker' in navigator) {
-    // Escucha si un nuevo Service Worker ha tomado el control
+    let refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-        const reloadNotice = document.createElement('div');
-        reloadNotice.style = `
-            position: fixed; bottom: 20px; left: 20px; right: 20px; 
-            background: #AA1915; color: white; padding: 18px; 
-            border-radius: 12px; z-index: 99999; text-align: center; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-weight: bold;
-            border: 2px solid white;
-        `;
-        reloadNotice.innerHTML = `
-            ¡NUEVA VERSIÓN DISPONIBLE! <br>
-            <button onclick="window.location.reload()" style="margin-top:10px; padding:8px 20px; border-radius:8px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer; text-transform:uppercase;">
-                Actualizar ahora
-            </button>
-        `;
-        document.body.appendChild(reloadNotice);
+        // Evitamos que se dispare varias veces o al cargar por primera vez
+        if (refreshing) return;
+        
+        // Solo avisamos si ya había un "controlador" previo (una versión antigua funcionando)
+        if (navigator.serviceWorker.controller) {
+            refreshing = true;
+            const reloadNotice = document.createElement('div');
+            reloadNotice.style = `
+                position: fixed; bottom: 20px; left: 20px; right: 20px; 
+                background: #AA1915; color: white; padding: 18px; 
+                border-radius: 12px; z-index: 99999; text-align: center; 
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-weight: bold;
+                border: 2px solid white;
+            `;
+            reloadNotice.innerHTML = `
+                ACTUALIZACIÓN DISPONIBLE <br>
+                <button onclick="window.location.reload()" style="margin-top:10px; padding:8px 20px; border-radius:8px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer;">
+                    ACTUALIZAR AHORA
+                </button>
+            `;
+            document.body.appendChild(reloadNotice);
+        }
     });
 }
+
 
 
 
