@@ -551,17 +551,21 @@ function showMaterialDetails(materialId, isBack = false) {
 /// --- NIVEL 6: Renderizado de Recurso a Pantalla Completa -- ///
 /// ---------------------------------------------------------- ///
 function renderResource(materialId, url, type, resourceName, isBack = false) {
+    // Si es un PDF, lo abrimos fuera de la app
+    if (type === 'pdf') {
+        // Abrimos en una pestaña nueva, lo que disparará el visor nativo del móvil
+        window.open(url, '_blank');
+        return; // Detenemos la ejecución para que no intente renderizar nada en la app
+    }
+
     let content = '';
 
     if (type === 'video') {
-        // Lógica para VÍDEOS DE YOUTUBE (IFRAME)
         content = `
             <div class="video-container centered-resource">
                 <iframe src="${url}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             </div>`;
-            
     } else if (type === 'video_mp4') {
-        // Lógica para VÍDEOS MP4 LOCALES (HTML5 <video>)
         content = `
             <div class="video-container centered-resource">
                 <video controls style="width: 100%; height: 100%; border-radius: 8px;" autoplay> 
@@ -569,7 +573,6 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
                     Tu navegador no soporta la etiqueta de video HTML5.
                 </video>
             </div>`;
-
     } else if (type === 'photo') {
         content = `<img src="${url}" class="centered-resource" style="box-shadow: 0 4px 15px rgba(0,0,0,0.4);">`;
     } else {
@@ -918,6 +921,7 @@ function mostrarGuiaInstalacion() {
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(mostrarGuiaInstalacion, 3000); // Esperamos 3 segundos tras el inicio
 });
+
 
 
 
