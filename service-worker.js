@@ -17,10 +17,19 @@ self.addEventListener('install', event => {
   );
 });
 
-// Estrategia de respuesta: Primero red, si falla, caché
+// Estrategia de respuesta: Caché con actualización en segundo plano
 self.addEventListener('fetch', event => {
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    caches.match(event.request).then(response => {
+      // Devolvemos caché si existe, pero lanzamos la petición a la red para actualizarla
+      const fetchPromise = fetch(event.request).then(networkResponse => {
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, networkResponse.clone());
+        });
+        return networkResponse;
+      });
+      return response || fetchPromise;
+    })
   );
-
 });
+
