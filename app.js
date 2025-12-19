@@ -1,5 +1,5 @@
 // 1. Configuración e Inicialización
-const APP_VERSION = 'v26'; // <--- DEBE COINCIDIR CON EL SERVICE WORKER
+const APP_VERSION = 'v27'; // <--- DEBE COINCIDIR CON EL SERVICE WORKER
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -58,26 +58,25 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
         // 1. Obtener los datos para la descarga (Drive)
         const material = FIREBASE_DATA.MATERIALS[materialId];
         const docEntry = material.docs.find(d => d.url === url);
-        let downloadUrl = docEntry && docEntry.url_download ? docEntry.url_download : url;
+        
+        // Priorizamos la url_download si existe, si no usamos la url normal
+        let downloadUrl = (docEntry && docEntry.url_download) ? docEntry.url_download : url;
 
+        // Si la URL es de Drive, la convertimos a descarga directa para que funcione la lupa al descargar
         if (downloadUrl.includes('drive.google.com/file/d/')) {
             const fileId = downloadUrl.split('/d/')[1].split('/')[0];
             downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
         }
-
-        // 2. Usar el Visor de Google Docs para la URL de GitHub
-        // Esto evita el botón azul de "Abrir" y carga el PDF directamente
-        const visorGoogleUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(window.location.origin + '/' + url)}&embedded=true`;
 
         const contentPdf = `
             <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 60px); background:#f0f0f0; overflow:hidden;">
                 
                 <div id="pdf-loader" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; z-index: 5;">
                     <div class="loader"></div>
-                    <p style="margin-top:10px; color:#666; font-weight:bold;">Preparando visor técnico...</p>
+                    <p style="margin-top:10px; color:#666; font-weight:bold;">Abriendo visor de Gijón...</p>
                 </div>
 
-                <iframe src="${visorGoogleUrl}" 
+                <iframe src="${url}" 
                         style="width:100%; height:100%; border:none; position:relative; z-index:10;" 
                         onload="document.getElementById('pdf-loader').style.display='none';">
                 </iframe>
@@ -86,7 +85,7 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
                    style="position:fixed; bottom:30px; right:20px; background:#AA1915; color:white; 
                           padding:15px 25px; border-radius:50px; text-decoration:none; font-weight:bold; 
                           box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:10px; border:2px solid white;">
-                   <span>DESCARGAR / LUPA</span> 🔍
+                   <span>DESCARGAR PDF</span> 🔍
                 </a>
             </div>
         `;
@@ -94,7 +93,7 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
         return;
     }
     
-    // Lógica para fotos y vídeos
+    // Lógica para fotos y vídeos (se mantiene igual)
     let content = '';
     if (type === 'video' || type === 'video_mp4') {
         content = `<div class="video-container centered-resource"><iframe src="${url}" frameborder="0" allowfullscreen></iframe></div>`;
@@ -987,6 +986,7 @@ function forzarActualizacion() {
         window.location.reload(true);
     }
 }
+
 
 
 
