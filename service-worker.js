@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bomberos-v29'; // Versión de control
+const CACHE_NAME = 'bomberos-v30'; // Versión actualizada
 const urlsToCache = [
   './',
   './index.html',
@@ -10,7 +10,7 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', event => {
-  self.skipWaiting(); 
+  self.skipWaiting(); // Fuerza la instalación inmediata
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
   );
@@ -20,19 +20,19 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.filter(name => name !== CACHE_NAME).map(name => caches.delete(name))
+        cacheNames.map(name => {
+          if (name !== CACHE_NAME) return caches.delete(name); // Limpia versiones viejas
+        })
       );
     })
   );
-  return self.clients.claim(); 
+  return self.clients.claim(); // Toma el control de la app de inmediato
 });
 
 self.addEventListener('fetch', event => {
   if (!(event.request.url.indexOf('http') === 0)) return;
   event.respondWith(
-    caches.match(event.request).then(cachedResponse => {
-      return cachedResponse || fetch(event.request);
-    })
+    caches.match(event.request).then(response => response || fetch(event.request))
   );
 });
 
