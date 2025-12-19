@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bomberos-v10';
+const CACHE_NAME = 'bomberos-v11';
 const urlsToCache = [
   './',
   './index.html',
@@ -41,5 +41,6 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
 
 
