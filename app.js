@@ -1,5 +1,5 @@
 // 1. Configuración e Inicialización
-const APP_VERSION = 'v28'; // <--- DEBE COINCIDIR CON EL SERVICE WORKER
+const APP_VERSION = 'v29'; // <--- DEBE COINCIDIR CON EL SERVICE WORKER
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -55,46 +55,41 @@ async function initializeApp() {
 // 3. Función renderResource (Visor GitHub + Descarga Drive)
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
+        // 1. Obtener la URL de descarga (Google Drive) desde los metadatos del material
         const material = FIREBASE_DATA.MATERIALS[materialId];
         const docEntry = material.docs.find(d => d.url === url);
+        
+        // Si existe 'url_download' (Drive) la usamos, si no, usamos la 'url' normal (GitHub)
         let downloadUrl = (docEntry && docEntry.url_download) ? docEntry.url_download : url;
 
-        // 1. Preparar la URL de descarga (Google Drive)
+        // Si es de Drive, la convertimos a formato de descarga directa para la lupa
         if (downloadUrl.includes('drive.google.com/file/d/')) {
             const fileId = downloadUrl.split('/d/')[1].split('/')[0];
             downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
         }
 
-        // 2. FORZAR VISOR: Usamos el visor de Google Docs con la URL absoluta del PDF
-        // Esto evita que Chrome muestre el botón azul de "Abrir"
-        const absolutePdfUrl = window.location.origin + '/' + url;
-        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(absolutePdfUrl)}&embedded=true`;
-
         const contentPdf = `
-            <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 60px); background:#f0f0f0;">
+            <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 65px); background:#f0f0f0; overflow:hidden;">
                 
-                <div id="pdf-loader" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
-                    <div class="loader"></div>
-                    <p style="margin-top:10px; color:#666; font-weight:bold;">Generando visor técnico...</p>
-                </div>
-
-                <iframe src="${googleViewerUrl}" 
-                        style="width:100%; height:100%; border:none; position:relative; z-index:10;" 
-                        onload="document.getElementById('pdf-loader').style.display='none';">
+                <iframe src="${url}" 
+                        type="application/pdf"
+                        style="width:100%; height:100%; border:none; display:block;">
                 </iframe>
                 
-                <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" 
-                   style="position:fixed; bottom:25px; right:15px; background:#AA1915; color:white; 
-                          padding:12px 20px; border-radius:50px; text-decoration:none; font-weight:bold; 
-                          box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:8px; border:2px solid white;">
-                   DESCARGAR PARA BUSCAR 🔍
+                <a href="${downloadUrl}" 
+                   target="_blank" 
+                   rel="noopener noreferrer" 
+                   style="position:fixed; bottom:30px; right:20px; background:#AA1915; color:white; 
+                          padding:15px 25px; border-radius:50px; text-decoration:none; font-weight:bold; 
+                          box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:9999; display:flex; align-items:center; gap:10px; border:2px solid white;">
+                   <span>DESCARGAR / LUPA</span> 🔍
                 </a>
             </div>
         `;
         render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
         return;
     }
-    
+
     // Lógica para fotos y vídeos
     let content = '';
     if (type === 'video' || type === 'video_mp4') {
@@ -988,6 +983,7 @@ function forzarActualizacion() {
         window.location.reload(true);
     }
 }
+
 
 
 
