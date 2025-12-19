@@ -540,21 +540,16 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
             <div style="text-align:center; padding:40px 20px;">
                 <div style="font-size: 5em; margin-bottom: 20px;">📄</div>
                 <h2 style="color:#AA1915;">Manual de Material</h2>
-                <p style="color:#333; font-size:1.1em; line-height:1.4; margin-bottom:30px;">
-                    Para poder usar la <b>LUPA DE BÚSQUEDA 🔍</b>, debes abrir este archivo con el visor de tu teléfono.
+                <p style="color:#333; margin-bottom:30px;">
+                    Para usar la <b>LUPA 🔍</b>, abre el visor externo.
                 </p>
                 
                 <a href="${url}" 
-                   download="${resourceName}.pdf" 
                    target="_blank" 
                    rel="noopener noreferrer" 
-                   style="display:inline-block; background:#AA1915; color:white; padding:20px 30px; border-radius:12px; text-decoration:none; font-weight:bold; font-size:1.2em; box-shadow: 0 4px 15px rgba(170,25,21,0.3); border: 2px solid #8a1411;">
+                   style="display:inline-block; background:#AA1915; color:white; padding:20px 30px; border-radius:12px; text-decoration:none; font-weight:bold;">
                    ABRIR CON LUPA 🔍
                 </a>
-                
-                <div style="margin-top:40px; padding:15px; background:#f9f9f9; border-radius:8px; border:1px solid #eee; font-size:0.9em; color:#666;">
-                    <p><b>Instrucciones:</b> Al pulsar el botón, el archivo se descargará o se abrirá en una pestaña nueva. Pulsa en los tres puntos (⋮) o en el icono de compartir y selecciona <b>"Abrir en el navegador"</b> o <b>"Abrir con..."</b>.</p>
-                </div>
             </div>
         `;
         render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
@@ -939,6 +934,7 @@ if ('serviceWorker' in navigator) {
         document.body.appendChild(reloadNotice);
     });
 }
+
 
 
 
