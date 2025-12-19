@@ -1,5 +1,5 @@
 // 1. DEFINICIÓN DE VARIABLES GLOBALES E INICIALIZACIÓN
-const APP_VERSION = 'v32'; 
+const APP_VERSION = 'v33'; 
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -113,7 +113,7 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
     render(`<div class="resource-container-wrapper">${media}</div>`, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
 }
 
-// 6. NAVEGACIÓN Y DASHBOARD
+// 6. NAVEGACIÓN Y SECCIONES
 function navigateToSection(id) {
     if (id === 'inventario') renderVehiclesList();
     if (id === 'material_global') renderGlobalMaterialList();
@@ -238,7 +238,29 @@ function showGlobalMaterialDetail(mId, isBack = false) {
     render(`<div class="material-text">${m.description || ''}</div><h3>📍 Ubicaciones</h3>${ubicHTML}`, m.name, { level: 5, materialId: mId, section: 'material_global' }, isBack);
 }
 
-// 9. CALENDARIO
+// 9. SECCIÓN MAPA
+async function renderMapaSection(isBack = false) {
+    render(`<div id="map"></div>`, 'Mapa de Hidrantes', { level: 1, section: 'mapa' }, isBack); 
+
+    setTimeout(() => {
+        const map = L.map('map').setView([43.5322, -5.6611], 14);
+        L.tileLayer('https://{s}.tile.org/{z}/{x}/{y}.png').addTo(map);
+
+        const capasConfig = [
+            { url: 'mapa/limites.geojson', color: 'red', label: 'Límites concejo' },
+            { url: 'mapa/hidrantes.geojson', color: 'red', label: 'Hidrantes', isPoint: true },
+            { url: 'mapa/br-c.geojson', color: 'green', label: 'Bocas riego centro', isPoint: true }
+        ];
+
+        capasConfig.forEach(capa => {
+            fetch(capa.url).then(r => r.json()).then(data => {
+                L.geoJSON(data, { style: { color: capa.color } }).addTo(map);
+            }).catch(e => console.log("Capa no encontrada:", capa.url));
+        });
+    }, 200);
+}
+
+// 10. CALENDARIO
 function renderCalendarioSection(isBack = false) {
     const botones = TURNOS_CONFIG.map(t => `<button class="turno-btn-small" style="background-color: ${t.color}" onclick="cambiarTurnoCal('${t.id}')">${t.id}</button>`).join('');
     const html = `<div class="calendar-header-compact"><div class="turno-row">${botones}</div></div><div class="calendar-nav"><button onclick="navegarMes(-1)">&#10140;</button><div id="mes-titulo-container" class="select-nav-container"></div><button onclick="navegarMes(1)">&#10140;</button></div><div id="calendar-view-container" class="calendar-view"></div>`;
@@ -277,9 +299,9 @@ function actualizarVistaCalendario() {
 
 function navegarMes(d) { mesActualCal+=d; if(mesActualCal<0){mesActualCal=11; añoActualCal--;} if(mesActualCal>11){mesActualCal=0; añoActualCal++;} actualizarVistaCalendario(); }
 function cambiarTurnoCal(id) { turnoSeleccionadoCal=id; actualizarVistaCalendario(); }
-function obtenerNombreMes(n) { return ["Enero", "Febrero", "Marzo", "Abril", "Mayo", " Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"][n]; }
+function obtenerNombreMes(n) { return ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"][n]; }
 
-// 10. NAVEGACIÓN ATRÁS (PASO A PASO)
+// 11. NAVEGACIÓN ATRÁS (PASO A PASO)
 function handleBackNavigation() {
     if (navigationHistory.length > 1) {
         navigationHistory.pop(); 
@@ -290,6 +312,7 @@ function handleBackNavigation() {
         else if (target.level === 1) {
             if (target.section === 'material_global') renderGlobalMaterialList(true);
             else if (target.section === 'calendario') renderCalendarioSection(true);
+            else if (target.section === 'mapa') renderMapaSection(true);
             else renderVehiclesList(true);
         }
         else if (target.level === 2) showVehicleViews(target.vehicleId, true);
@@ -306,75 +329,3 @@ function handleBackNavigation() {
 if (backButton) { backButton.addEventListener('click', (e) => { e.preventDefault(); history.back(); }); }
 window.onpopstate = handleBackNavigation;
 function goToHome() { navigationHistory = []; renderDashboard(); }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
