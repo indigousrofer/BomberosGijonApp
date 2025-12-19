@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bomberos-v26'; // Versión de control
+const CACHE_NAME = 'bomberos-v27'; // Versión de control
 const urlsToCache = [
   './',
   './index.html',
@@ -35,6 +35,7 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
 
 
 
