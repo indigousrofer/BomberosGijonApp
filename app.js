@@ -1,5 +1,5 @@
 // 1. DEFINICIÓN DE VARIABLES GLOBALES E INICIALIZACIÓN
-const APP_VERSION = 'v35'; 
+const APP_VERSION = 'v36'; 
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -532,30 +532,35 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
         const docEntry = material.docs.find(d => d.url === url);
         let downloadUrl = (docEntry && docEntry.url_download) ? docEntry.url_download : url;
 
-        // Convertir Drive a descarga directa para la lupa
         if (downloadUrl.includes('drive.google.com/file/d/')) {
             const fileId = downloadUrl.split('/d/')[1].split('/')[0];
             downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
         }
 
-        // Construir URL absoluta para que Google Docs pueda leer el archivo de GitHub
         const absolutePdfUrl = window.location.origin + window.location.pathname.replace('index.html', '') + url;
         const googleDocsViewer = `https://docs.google.com/viewer?url=${encodeURIComponent(absolutePdfUrl)}&embedded=true`;
 
         const contentPdf = `
-            <div class="resource-container-wrapper" style="height: calc(100vh - 65px); width: 100%; position: relative; background: #f0f0f0; overflow:hidden;">
-                <div id="pdf-loading-overlay" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
+            <div class="resource-container-wrapper" 
+                 style="height: calc(100vh - 60px); 
+                        width: calc(100% + 40px); 
+                        margin: -20px; 
+                        position: relative; 
+                        background: #f0f0f0; 
+                        overflow: hidden;">
+                
+                <div id="pdf-loading-overlay" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; z-index: 5;">
                     <div class="loader"></div>
                     <p style="margin-top:10px; color:#666;">Cargando manual técnico...</p>
                 </div>
                 
                 <iframe src="${googleDocsViewer}" 
-                        style="width:100%; height:100%; border:none; position:relative; z-index:10;"
+                        style="width:100%; height:100%; border:none; position:relative; z-index:10; display:block;"
                         onload="document.getElementById('pdf-loading-overlay').style.display='none';">
                 </iframe>
                 
                 <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" 
-                   style="position:fixed; bottom:25px; right:15px; background:#AA1915; color:white; padding:12px 20px; border-radius:50px; text-decoration:none; font-weight:bold; box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:8px; border:2px solid white;">
+                   style="position:fixed; bottom:25px; right:25px; background:#AA1915; color:white; padding:12px 20px; border-radius:50px; text-decoration:none; font-weight:bold; box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index:10002; display:flex; align-items:center; gap:8px; border:2px solid white;">
                    DESCARGAR PDF 🔍
                 </a>
             </div>`;
@@ -959,6 +964,7 @@ function forzarActualizacion() {
         window.location.reload(true);
     }
 }
+
 
 
 
