@@ -536,20 +536,27 @@ function showMaterialDetails(materialId, isBack = false) {
 /// ---------------------------------------------------------- ///
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
-        // Usamos una ventana con nombre propio para que el sistema lo gestione como entidad aparte
-        const nuevaVentana = window.open(url, '_blank');
+        // Intentamos la apertura directa primero
+        const win = window.open(url, '_blank');
         
-        if (!nuevaVentana || nuevaVentana.closed || typeof nuevaVentana.closed == 'undefined') {
-            // Si el bloqueador de pop-ups actúa, mostramos un botón manual
-            const contentError = `
-                <div style="text-align:center; padding:20px;">
-                    <p>El navegador ha bloqueado la apertura automática.</p>
-                    <button onclick="window.open('${url}', '_blank')" class="view-button" style="background:#AA1915; color:white; width:100%;">
-                        ABRIR MANUAL CON LUPA 🔍
-                    </button>
-                </div>`;
-            render(contentError, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
-        }
+        // Si el navegador lo bloquea o lo abre "dentro", ofrecemos el botón de salto manual
+        const contentPdf = `
+            <div style="text-align:center; padding:40px 20px;">
+                <div style="font-size: 4em; margin-bottom: 20px;">📄</div>
+                <h3 style="color:#333;">Abrir Manual Técnico</h3>
+                <p style="color:#666; margin-bottom: 30px;">Para usar la <b>lupa de búsqueda</b>, abre el archivo en el visor externo:</p>
+                
+                <a href="${url}" target="_blank" rel="noopener noreferrer" 
+                   style="display:block; background:#AA1915; color:white; padding:18px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:1.1em; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                   ABRIR CON VISOR EXTERNO 🔍
+                </a>
+                
+                <p style="margin-top:30px; font-size:0.85em; color:#888;">
+                   (Si se abre aquí, pulsa el icono de compartir o los tres puntos y elige "Abrir en el navegador")
+                </p>
+            </div>
+        `;
+        render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
         return; 
     }
     
@@ -904,8 +911,30 @@ function mostrarGuiaInstalacion() {
 
 // Ejecutar la guía después de cargar la app
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(mostrarGuiaInstalacion, 3000); // Esperamos 3 segundos tras el inicio
+    setTimeout(mostrarGuiaInstalacion, 2000); // Esperamos 3 segundos tras el inicio
 });
+
+// --- DETECTOR DE NUEVA VERSIÓN ---
+if ('serviceWorker' in navigator) {
+    // Escucha si un nuevo Service Worker ha tomado el control
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        const reloadNotice = document.createElement('div');
+        reloadNotice.style = `
+            position: fixed; bottom: 20px; left: 20px; right: 20px; 
+            background: #AA1915; color: white; padding: 18px; 
+            border-radius: 12px; z-index: 99999; text-align: center; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-weight: bold;
+            border: 2px solid white;
+        `;
+        reloadNotice.innerHTML = `
+            ¡NUEVA VERSIÓN DISPONIBLE! <br>
+            <button onclick="window.location.reload()" style="margin-top:10px; padding:8px 20px; border-radius:8px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer; text-transform:uppercase;">
+                Actualizar ahora
+            </button>
+        `;
+        document.body.appendChild(reloadNotice);
+    });
+}
 
 
 
