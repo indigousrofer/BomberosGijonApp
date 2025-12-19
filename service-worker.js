@@ -1,4 +1,4 @@
-const CACHE_NAME = 'v34'; // Versión actualizada
+const CACHE_NAME = 'v35'; // Versión actualizada
 const urlsToCache = [
   './',
   './index.html',
@@ -35,6 +35,7 @@ self.addEventListener('fetch', event => {
     caches.match(event.request).then(response => response || fetch(event.request))
   );
 });
+
 
 
 
