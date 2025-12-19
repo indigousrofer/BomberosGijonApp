@@ -55,15 +55,18 @@ async function initializeApp() {
 // 3. Función renderResource (Visor GitHub + Descarga Drive)
 function renderResource(materialId, url, type, resourceName, isBack = false) {
     if (type === 'pdf') {
-        // Buscamos si es enlace de Drive para el botón de descarga
-        let downloadUrl = url;
-        if (url.includes('drive.google.com/file/d/')) {
-            const fileId = url.split('/d/')[1].split('/')[0];
+        // 1. Buscamos si el objeto actual tiene una URL de descarga específica (Drive)
+        // Obtenemos los datos del material para buscar el objeto doc correspondiente
+        const material = FIREBASE_DATA.MATERIALS[materialId];
+        const docEntry = material.docs.find(d => d.url === url);
+        
+        let downloadUrl = docEntry && docEntry.url_download ? docEntry.url_download : url;
+
+        // 2. Si es de Drive, lo convertimos a descarga directa
+        if (downloadUrl.includes('drive.google.com/file/d/')) {
+            const fileId = downloadUrl.split('/d/')[1].split('/')[0];
             downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
         }
-
-        // Si usas GitHub para el visor interno, cámbialo aquí si es necesario
-        const visorUrl = url; 
 
         const contentPdf = `
             <div class="resource-container-wrapper" style="position:relative; height: calc(100vh - 60px); background:#f0f0f0; overflow:hidden;">
@@ -72,7 +75,7 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
                     <p style="margin-top:10px; color:#666; font-weight:bold;">Cargando visor...</p>
                 </div>
 
-                <iframe src="${visorUrl}" 
+                <iframe src="${url}" 
                         style="width:100%; height:100%; border:none; position:relative; z-index:10;" 
                         onload="document.getElementById('pdf-loader').style.display='none';">
                 </iframe>
@@ -982,6 +985,7 @@ function forzarActualizacion() {
         window.location.reload(true);
     }
 }
+
 
 
 
