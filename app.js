@@ -341,7 +341,7 @@ function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
     
     let contentHTML = ''; 
 
-    // 1. Mostrar Imagen del Armario (si existe en Firebase)
+    // 1. Mostrar Imagen del Armario
     if (hotspot.armario_image) {
         contentHTML += `
             <div class="armario-image-container">
@@ -351,12 +351,13 @@ function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
     }
     
     const headerHTML = `
-	    <div class="inventory-row inventory-header"> <div class="col-qty">nº</div>
-	        <div class="col-name">Material</div>
-	    </div>
-	`;
+        <div class="inventory-row inventory-header"> 
+            <div class="col-qty">nº</div>
+            <div class="col-name">Material</div>
+        </div>
+    `;
 
-    // 2. Lógica para renderizar tablas (Modo Secciones o Modo Simple)
+    // 2. Lógica para renderizar tablas
     if (hotspot.sections && hotspot.sections.length > 0) {
         // --- A) MODO SECCIONES ---
         const tablesHTML = hotspot.sections.map(section => {
@@ -365,34 +366,41 @@ function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
                 if (!material) return `<div class="inventory-row" style="color:red; padding:10px;">ID ${item.id} no encontrado</div>`;
                 
                 const isKit = material.is_kit;
-				const tieneInfo = tieneInformacionExtra(item.id);
-				
-				let clickAction = '';
-				let iconEye = '';
-				let rowClass = 'inventory-row';
-				
-				if (isKit) {
-				    clickAction = `onclick="showKitInventory('${item.id}', '${hotspot.name}')"`;
-				    rowClass += ' kit-row';
-				    // Los kits suelen ser clicables siempre para ver su contenido
-				} else if (tieneInfo) {
-				    clickAction = `onclick="showMaterialDetails('${item.id}')"`;
-				    iconEye = '<span style="margin-left:8px; opacity:0.7;">👁️</span>';
-				} else {
-				    // Si no es kit ni tiene info, quitamos el cursor de puntero
-				    clickAction = 'style="cursor: default;"'; 
-				}
-				
-				const indicator = isKit ? '<span class="kit-indicator">(Ver contenido)</span>' : '';
-				
-				return `
-				    <div class="${rowClass}" ${clickAction}>
-				        <div class="col-qty">${item.qty}</div>
-				        <div class="col-name">
-				            ${material.name}${iconEye} ${indicator}
-				        </div>
-				    </div>`;
-        	}).join('');
+                const tieneInfo = tieneInformacionExtra(item.id);
+                
+                let clickAction = '';
+                let iconEye = '';
+                let rowClass = 'inventory-row';
+                
+                if (isKit) {
+                    clickAction = `onclick="showKitInventory('${item.id}', '${hotspot.name}')"`;
+                    rowClass += ' kit-row';
+                } else if (tieneInfo) {
+                    clickAction = `onclick="showMaterialDetails('${item.id}')"`;
+                    iconEye = '<span style="margin-left:8px; opacity:0.7;">👁️</span>';
+                } else {
+                    clickAction = 'style="cursor: default;"'; 
+                }
+                
+                const indicator = isKit ? '<span class="kit-indicator">(Ver contenido)</span>' : '';
+                
+                return `
+                    <div class="${rowClass}" ${clickAction}>
+                        <div class="col-qty">${item.qty}</div>
+                        <div class="col-name">
+                            ${material.name}${iconEye} ${indicator}
+                        </div>
+                    </div>`;
+            }).join(''); // Cierre de section.items.map
+            
+            return `
+                <div class="inventory-table-container">
+                    <h4 class="inventory-section-title">${section.name}</h4>
+                    <div class="inventory-table">
+                        ${headerHTML}${rowsHTML}
+                    </div>
+                </div>`;
+        }).join(''); // Cierre de hotspot.sections.map
         contentHTML += `<div class="inventory-sections-wrapper">${tablesHTML}</div>`;
 	
     } else if (hotspot.inventory && hotspot.inventory.length > 0) {
@@ -402,33 +410,31 @@ function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
             if (!material) return `<div class="inventory-row" style="color:red; padding:10px;">ID ${item.id} no encontrado</div>`;
             
             const isKit = material.is_kit;
-			const tieneInfo = tieneInformacionExtra(item.id);
-			
-			let clickAction = '';
-			let iconEye = '';
-			let rowClass = 'inventory-row';
-			
-			if (isKit) {
-			    clickAction = `onclick="showKitInventory('${item.id}', '${hotspot.name}')"`;
-			    rowClass += ' kit-row';
-			    // Los kits suelen ser clicables siempre para ver su contenido
-			} else if (tieneInfo) {
-			    clickAction = `onclick="showMaterialDetails('${item.id}')"`;
-			    iconEye = '<span style="margin-left:8px; opacity:0.7;">👁️</span>';
-			} else {
-			    // Si no es kit ni tiene info, quitamos el cursor de puntero
-			    clickAction = 'style="cursor: default;"'; 
-			}
-			
-			const indicator = isKit ? '<span class="kit-indicator">(Ver contenido)</span>' : '';
-			
-			return `
-			    <div class="${rowClass}" ${clickAction}>
-			        <div class="col-qty">${item.qty}</div>
-			        <div class="col-name">
-			            ${material.name}${iconEye} ${indicator}
-			        </div>
-			    </div>`;
+            const tieneInfo = tieneInformacionExtra(item.id);
+            
+            let clickAction = '';
+            let iconEye = '';
+            let rowClass = 'inventory-row';
+            
+            if (isKit) {
+                clickAction = `onclick="showKitInventory('${item.id}', '${hotspot.name}')"`;
+                rowClass += ' kit-row';
+            } else if (tieneInfo) {
+                clickAction = `onclick="showMaterialDetails('${item.id}')"`;
+                iconEye = '<span style="margin-left:8px; opacity:0.7;">👁️</span>';
+            } else {
+                clickAction = 'style="cursor: default;"'; 
+            }
+            
+            const indicator = isKit ? '<span class="kit-indicator">(Ver contenido)</span>' : '';
+            
+            return `
+                <div class="${rowClass}" ${clickAction}>
+                    <div class="col-qty">${item.qty}</div>
+                    <div class="col-name">
+                        ${material.name}${iconEye} ${indicator}
+                    </div>
+                </div>`;
         }).join('');
 	
         contentHTML += `
@@ -876,6 +882,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(initialState, "Bomberos Gijón");
     initializeApp(); 
 });
+
 
 
 
