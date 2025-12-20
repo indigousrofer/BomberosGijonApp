@@ -10,15 +10,17 @@ let turnoSeleccionadoCal = 'T2';
 
 const appContent = document.getElementById('app-content');
 const backButton = document.getElementById('back-button');
+const mainScroll = document.getElementById('main-scroll');
+const zoomLayer = document.getElementById('zoom-layer');
 
 let FIREBASE_DATA = { VEHICLES: [], DETAILS: {}, MATERIALS: {} };
 
 // 2. PUNTO DE INICIO Y GESTIÓN DE PWA
 document.addEventListener('DOMContentLoaded', () => {
-    if (!appContent || !backButton) return;
+  if (!appContent || !backButton) return;
 
-    initializeApp(); 
-    
+  initZoom();
+  initializeApp();
 });
 
 // 3. CARGA DE DATOS Y ACTUALIZACIÓN
@@ -131,6 +133,9 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
 
 // --- FUNCIÓN RENDER ---
 function render(contentHTML, title, state, isBack = false) {
+	resetZoom();
+  	if (mainScroll) { mainScroll.scrollTop = 0; mainScroll.scrollLeft = 0; }
+	
     appContent.innerHTML = contentHTML;
     document.querySelector('header h1').textContent = title;
 
@@ -157,6 +162,118 @@ function render(contentHTML, title, state, isBack = false) {
     }
 }
 
+// ---------------------------------------------------- //
+// --- FUNCIONES PARA EL ZOOM ESPECIAL ---------------- //
+const __zoom = {
+  scale: 1, x: 0, y: 0,
+  min: 1, max: 3,
+  pointers: new Map(),
+  isPanning: false,
+  panStartX: 0, panStartY: 0,
+  startX: 0, startY: 0,
+  pinchStartDist: 0,
+  pinchStartScale: 1,
+  pinchStartX: 0,
+  pinchStartY: 0,
+  pinchRefPx: 0,
+  pinchRefPy: 0,
+};
+
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function dist(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
+function midpoint(a, b) { return { clientX: (a.clientX + b.clientX) / 2, clientY: (a.clientY + b.clientY) / 2 }; }
+
+function applyZoom() {
+  if (!zoomLayer) return;
+  zoomLayer.style.transform = `translate(${__zoom.x}px, ${__zoom.y}px) scale(${__zoom.scale})`;
+  if (mainScroll) mainScroll.style.overflow = (__zoom.scale > 1 ? 'hidden' : 'auto');
+}
+
+function resetZoom() {
+  __zoom.scale = 1;
+  __zoom.x = 0;
+  __zoom.y = 0;
+  __zoom.pointers.clear();
+  __zoom.isPanning = false;
+  applyZoom();
+}
+
+function initZoom() {
+  if (!mainScroll || !zoomLayer) return;
+  applyZoom();
+
+  mainScroll.addEventListener('pointerdown', (e) => {
+    mainScroll.setPointerCapture?.(e.pointerId);
+    __zoom.pointers.set(e.pointerId, e);
+
+    if (__zoom.pointers.size === 1 && __zoom.scale > 1) {
+      __zoom.isPanning = true;
+      __zoom.panStartX = e.clientX;
+      __zoom.panStartY = e.clientY;
+      __zoom.startX = __zoom.x;
+      __zoom.startY = __zoom.y;
+    }
+
+    if (__zoom.pointers.size === 2) {
+      const [a, b] = Array.from(__zoom.pointers.values());
+      const mid = midpoint(a, b);
+
+      const rect = mainScroll.getBoundingClientRect();
+      const mx = mid.clientX - rect.left;
+      const my = mid.clientY - rect.top;
+
+      __zoom.pinchStartDist = dist(a, b) || 1;
+      __zoom.pinchStartScale = __zoom.scale;
+      __zoom.pinchStartX = __zoom.x;
+      __zoom.pinchStartY = __zoom.y;
+
+      __zoom.pinchRefPx = (mx - __zoom.pinchStartX) / __zoom.pinchStartScale;
+      __zoom.pinchRefPy = (my - __zoom.pinchStartY) / __zoom.pinchStartScale;
+
+      __zoom.isPanning = false;
+    }
+  }, { passive: true });
+
+  mainScroll.addEventListener('pointermove', (e) => {
+    if (!__zoom.pointers.has(e.pointerId)) return;
+    __zoom.pointers.set(e.pointerId, e);
+
+    if (__zoom.pointers.size === 2) {
+      const [a, b] = Array.from(__zoom.pointers.values());
+      const mid = midpoint(a, b);
+
+      const rect = mainScroll.getBoundingClientRect();
+      const mx = mid.clientX - rect.left;
+      const my = mid.clientY - rect.top;
+
+      const d = dist(a, b) || 1;
+      __zoom.scale = clamp(__zoom.pinchStartScale * (d / __zoom.pinchStartDist), __zoom.min, __zoom.max);
+
+      __zoom.x = mx - __zoom.pinchRefPx * __zoom.scale;
+      __zoom.y = my - __zoom.pinchRefPy * __zoom.scale;
+
+      applyZoom();
+      return;
+    }
+
+    if (__zoom.pointers.size === 1 && __zoom.isPanning && __zoom.scale > 1) {
+      const dx = e.clientX - __zoom.panStartX;
+      const dy = e.clientY - __zoom.panStartY;
+      __zoom.x = __zoom.startX + dx;
+      __zoom.y = __zoom.startY + dy;
+      applyZoom();
+    }
+  }, { passive: true });
+
+  const end = (e) => {
+    __zoom.pointers.delete(e.pointerId);
+    if (__zoom.pointers.size < 2) __zoom.isPanning = false;
+    if (__zoom.scale <= 1) resetZoom();
+  };
+
+  mainScroll.addEventListener('pointerup', end, { passive: true });
+  mainScroll.addEventListener('pointercancel', end, { passive: true });
+}
 
 // ----------------------------------------------------
 // Nivel 0: DASHBOARD (Pantall de inicio)
@@ -895,7 +1012,7 @@ function handleBackNavigation() {
     if (navigationHistory.length > 1) {
         navigationHistory.pop(); 
         const target = navigationHistory[navigationHistory.length - 1];
-        window.scrollTo(0, 0);
+        if (mainScroll) { mainScroll.scrollTop = 0; mainScroll.scrollLeft = 0; }
         
         if (target.level === 0) renderDashboard(true);
         else if (target.level === 1) {
@@ -1038,6 +1155,7 @@ async function forzarActualizacion() {
   if (banner) banner.remove();
   window.location.reload();
 }
+
 
 
 
