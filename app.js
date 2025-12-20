@@ -1,5 +1,4 @@
 // 1. DEFINICIÓN DE VARIABLES GLOBALES E INICIALIZACIÓN
-const APP_VERSION = 'v39'; 
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -926,52 +925,56 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- SISTEMA DE ACTUALIZACIÓN DEFINITIVO ---
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-        // Solo mostramos el aviso si ya hay un controlador (evita el aviso al instalar por primera vez)
-        if (navigator.serviceWorker.controller) {
-            showUpdateNotice();
-        }
+let swRegistration = null;
+
+async function initServiceWorkerUpdates() {
+  if (!('serviceWorker' in navigator)) return;
+
+  swRegistration = await navigator.serviceWorker.ready;
+
+  // Si ya hay uno esperando al arrancar
+  if (swRegistration.waiting) showUpdateNotice();
+
+  // Cuando se instale uno nuevo
+  swRegistration.addEventListener('updatefound', () => {
+    const newWorker = swRegistration.installing;
+    if (!newWorker) return;
+
+    newWorker.addEventListener('statechange', () => {
+      // Cuando termina de instalar y hay un SW previo controlando, entonces es "update"
+      if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+        showUpdateNotice();
+      }
     });
+  });
+
+  // Cuando el nuevo SW toma control, recargamos y quitamos banner
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    const banner = document.getElementById('update-banner');
+    if (banner) banner.remove();
+    window.location.reload();
+  });
 }
 
-function showUpdateNotice() {
-    // Si ya existe el banner, no lo duplicamos
-    if (document.getElementById('update-banner')) return;
+// Llama a esto en DOMContentLoaded (una sola vez)
+document.addEventListener('DOMContentLoaded', () => {
+  initServiceWorkerUpdates().catch(console.error);
+});
 
-    const aviso = document.createElement('div');
-    aviso.id = 'update-banner';
-    aviso.style = `
-        position: fixed; bottom: 20px; left: 20px; right: 20px; 
-        background: #AA1915; color: white; padding: 20px; 
-        border-radius: 12px; z-index: 99999; text-align: center; 
-        font-weight: bold; border: 2px solid white; 
-        box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-    `;
-    
-    // Al pulsar, forzamos la recarga limpiando la caché de la ventana
-    aviso.innerHTML = `
-        NUEVA VERSIÓN DISPONIBLE <br>
-        <button onclick="forzarActualizacion()" style="margin-top:10px; padding:10px 20px; border-radius:8px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer;">
-            ACTUALIZAR AHORA
-        </button>
-    `;
-    document.body.appendChild(aviso);
-}
-
-// Función global para el botón
 function forzarActualizacion() {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-            for (let registration of registrations) {
-                registration.update(); // Fuerza a buscar la nueva versión
-            }
-            window.location.reload(true); // Recarga forzosa
-        });
-    } else {
-        window.location.reload(true);
-    }
+  if (!swRegistration) return window.location.reload();
+
+  const waiting = swRegistration.waiting;
+  if (waiting) {
+    // Pide al SW nuevo que se active YA
+    waiting.postMessage({ type: 'SKIP_WAITING' });
+    return;
+  }
+
+  // Si no hay waiting, intentamos buscar update y mostramos mensaje
+  swRegistration.update().catch(() => {});
 }
+
 
 
 
