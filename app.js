@@ -743,6 +743,11 @@ function openImageViewer(src, alt = "") {
   const layer = viewer.querySelector(".img-viewer-layer");
   const img = viewer.querySelector("img");
 
+	// Cerrar si tocas fuera (en el fondo oscuro)
+	viewer.addEventListener('click', (e) => {
+		if (e.target === viewport) closeImageViewer();
+	});
+
   function clampToBounds() {
     const vpRect = viewport.getBoundingClientRect();
 
@@ -1417,6 +1422,7 @@ async function forzarActualizacion() {
   if (banner) banner.remove();
   window.location.reload();
 }
+
 
 
 
