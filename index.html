@@ -14,14 +14,13 @@
 	<link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png">
     <link rel="stylesheet" href="style.css">
 	<script>
-	    if ('serviceWorker' in navigator) {
-	        window.addEventListener('load', () => {
-	            navigator.serviceWorker.register('/BomberosGijonApp/service-worker.js')
-	                .then(reg => console.log('Service Worker registrado con éxito', reg))
-	                .catch(err => console.log('Error al registrar Service Worker', err));
-	        });
-	    }
+	  if ('serviceWorker' in navigator) {
+	    window.addEventListener('load', () => {
+	      navigator.serviceWorker.register('./service-worker.js');
+	    });
+	  }
 	</script>
+
 	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 	<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
@@ -50,6 +49,7 @@
 </body>
 
 </html>
+
 
 
 
