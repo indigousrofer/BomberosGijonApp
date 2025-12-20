@@ -90,6 +90,15 @@ function navigateToSection(id) {
     if (id === 'calendario') renderCalendarioSection(); // ID de data.js
 }
 
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function isStandalonePWA() {
+  return window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
 // --- FUNCIÓN RENDER del mapa ---
 // --- NIVEL 1: SECCIÓN DE MAPA (ACTUALIZADA) ---
 async function renderMapaSection(isBack = false) { // <--- Añadir isBack
@@ -718,15 +727,20 @@ function buildMaterialResourcesHTML(materialId, material) {
 
   const pdfRows = pdfs.length
     ? pdfs.map(d => {
-        const downloadUrl = driveToDirectDownload(d.url_download || d.url);
+        const isIOSPWA = isIOS() && isStandalonePWA();
+		const downloadUrl = isIOSPWA
+		  ? doc.url                         // ✅ iOS PWA: usa el PDF local
+		  : driveToDirectDownload(doc.url_download || doc.url); // ✅ resto: Drive directo
+		const downloadAttr = isIOSPWA ? '' : 'download';
+		
         return `
           <div class="doc-row">
             <div class="doc-name">${d.name}</div>
             <a class="doc-download-btn"
-               href="${downloadUrl}"
-               target="_blank"
-               rel="noopener noreferrer"
-               download>Descargar</a>
+			   href="${downloadUrl}"
+			   target="_blank"
+			   rel="noopener noreferrer"
+			   ${downloadAttr}>Descargar</a>
           </div>
         `;
       }).join('')
@@ -1533,6 +1547,7 @@ async function forzarActualizacion() {
   if (banner) banner.remove();
   window.location.reload();
 }
+
 
 
 
