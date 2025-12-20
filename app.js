@@ -19,15 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initializeApp(); 
     
-    if ('serviceWorker' in navigator) {
-        const savedVersion = localStorage.getItem('app_version');
-        if (savedVersion && savedVersion !== APP_VERSION) {
-            showUpdateNotice();
-        }
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            localStorage.setItem('app_version', APP_VERSION);
-        });
-    }
 });
 
 // 3. CARGA DE DATOS Y ACTUALIZACIÓN
@@ -57,11 +48,6 @@ function showUpdateNotice() {
     aviso.style = "position:fixed; top:70px; left:10px; right:10px; background:#AA1915; color:white; padding:15px; border-radius:8px; z-index:10005; text-align:center; font-weight:bold; border:2px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.3);";
     aviso.innerHTML = `ACTUALIZACIÓN LISTA <button onclick="forzarActualizacion()" style="margin-left:10px; padding:5px 15px; border-radius:5px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer;">ACTUALIZAR</button>`;
     document.body.appendChild(aviso);
-}
-
-function forzarActualizacion() {
-    localStorage.setItem('app_version', APP_VERSION);
-    window.location.reload(true);
 }
 
 function navigateToSection(id) {
@@ -974,6 +960,7 @@ function forzarActualizacion() {
   // Si no hay waiting, intentamos buscar update y mostramos mensaje
   swRegistration.update().catch(() => {});
 }
+
 
 
 
