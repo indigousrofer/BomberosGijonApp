@@ -708,7 +708,7 @@ function __mid2(a, b) {
 
 function openImageViewer(src, alt = "") {
   // Bloqueamos zoom de página mientras el visor está abierto (reutilizamos tu función)
-  lockPageZoom(true);
+  document.body.style.overflow = 'hidden';
 
   // Si ya existe, lo cerramos primero para resetear estado
   closeImageViewer();
@@ -867,7 +867,7 @@ function closeImageViewer() {
     __imgViewer.remove();
     __imgViewer = null;
   }
-  lockPageZoom(false);
+  document.body.style.overflow = '';
 }
 
 function showMaterialDetails(materialId, isBack = false) {
@@ -1403,6 +1403,7 @@ async function forzarActualizacion() {
   if (banner) banner.remove();
   window.location.reload();
 }
+
 
 
 
