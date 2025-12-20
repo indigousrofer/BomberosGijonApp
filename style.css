@@ -869,81 +869,37 @@ body {
     color: #000 !important;
 }
 
-.pdfjs-wrapper,
-.pdfjs-toolbar,
-.pdfjs-scroll,
-.pdfjs-pages {
+.pdf-basic{
+  position: relative;
+  height: calc(100vh - 60px); /* tu header mide 60px */
   width: 100%;
-  transform-origin: 0 0; /* importante */
-}
-
-.pdfjs-wrapper {
-  height: calc(100vh - 65px);
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  background: #f0f0f0;
   overflow: hidden;
+  background: #f0f0f0;
 }
 
-.pdfjs-toolbar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: #fff;
-  padding: 10px;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  border-bottom: 1px solid #ddd;
-}
-
-.pdfjs-btn {
-  padding: 8px 12px;
-}
-
-.pdfjs-download {
-  margin-left: 10px;
-  padding: 8px 12px;
-  background: #aa1915;
-  color: #fff;
-  border-radius: 6px;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.pdfjs-info {
-  margin-left: auto;
-  font-weight: 700;
-}
-
-.pdfjs-scroll {
-  flex: 1;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 12px; /* margen visual */
-}
-
-.pdfjs-loading {
-  text-align: center;
-  color: #666;
-  padding: 20px;
-}
-
-.pdfjs-pages {
+.pdf-frame{
+  position: absolute;
+  inset: 0;
   width: 100%;
-  transform-origin: 0 0; /* para pinch preview */
+  height: 100%;
+  border: 0;
 }
 
-.pdfjs-pages canvas {
-  display: block;
-  margin: 0 auto 12px auto; /* centrado + separación */
-  background: #fff;
-  border-radius: 8px;
-  max-width: 100%;
+.pdf-download{
+  position: fixed;
+  right: 15px;
+  bottom: 25px;
+  z-index: 10002;
+
+  background:#AA1915;
+  color:white;
+  padding:12px 20px;
+  border-radius:50px;
+  text-decoration:none;
+  font-weight:bold;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+  border:2px solid white;
 }
-
-
 
 
 
