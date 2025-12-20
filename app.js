@@ -473,41 +473,106 @@ function showKitInventory(kitId, parentName, isBack = false) {
 }
 
 // --- NIVEL 5: Detalles del Material (Navega al Nivel 6) ---
+// ---------------------------------------------------------- //
+// Función "helper" //
+function buildMaterialResourcesHTML(materialId, material) {
+  const docs = (material.docs || []).filter(d => d.url && d.name);
+
+  const mainPhoto = docs.find(d => d.type === 'photo');
+  const pdfs = docs.filter(d => d.type === 'pdf');
+  const photos = docs.filter(d => d.type === 'photo' && d !== mainPhoto);
+
+  // (Opcional) si tienes vídeos, los dejo como sección aparte.
+  // Si quieres que NO salga nunca, lo quitamos luego.
+  const videos = docs.filter(d => d.type === 'video' || d.type === 'video_mp4');
+
+  if (!pdfs.length && !photos.length && !videos.length) return '';
+
+  const pdfRows = pdfs.length
+    ? pdfs.map(d => {
+        const downloadUrl = driveToDirectDownload(d.url_download || d.url);
+        return `
+          <div class="doc-row">
+            <div class="doc-name">${d.name}</div>
+            <a class="doc-download-btn"
+               href="${downloadUrl}"
+               target="_blank"
+               rel="noopener noreferrer"
+               download>Descargar</a>
+          </div>
+        `;
+      }).join('')
+    : `<p class="muted">No hay documentos PDF.</p>`;
+
+  const imgRows = photos.length
+    ? photos.map(d => `
+        <img src="${d.url}"
+             alt="${d.name}"
+             class="material-extra-img"
+             draggable="false">
+      `).join('')
+    : `<p class="muted">No hay imágenes.</p>`;
+
+  const videoSection = videos.length
+    ? `
+      <div class="docs-subsection">
+        <h4 class="docs-subsection-title">Vídeos</h4>
+        ${videos.map(d => `
+          <div class="list-item" onclick="renderResource('${materialId}','${d.url}','${d.type}','${d.name}')">
+            <strong>🎬 Ver ${d.name}</strong>
+          </div>
+        `).join('')}
+      </div>
+    `
+    : '';
+
+  return `
+    <hr>
+    <h3>Documentación y Recursos</h3>
+
+    <div class="docs-subsection">
+      <h4 class="docs-subsection-title">Documentos PDF</h4>
+      <div class="docs-table">
+        ${pdfRows}
+      </div>
+    </div>
+
+    <div class="docs-subsection">
+      <h4 class="docs-subsection-title">Imágenes</h4>
+      <div class="docs-images">
+        ${imgRows}
+      </div>
+    </div>
+
+    ${videoSection}
+  `;
+}
+
 function showMaterialDetails(materialId, isBack = false) {
-    const material = FIREBASE_DATA.MATERIALS[materialId];
-    if (!material) return;
+  const material = FIREBASE_DATA.MATERIALS[materialId];
+  if (!material) return;
 
-    const documentosValidos = (material.docs || []).filter(doc => doc.url && doc.name);
-    const mainPhoto = documentosValidos.find(doc => doc.type === 'photo');
-    const filteredDocs = documentosValidos.filter(doc => doc !== mainPhoto);
+  const documentosValidos = (material.docs || []).filter(doc => doc.url && doc.name);
+  const mainPhoto = documentosValidos.find(doc => doc.type === 'photo');
 
-    const docsHTML = filteredDocs.length > 0 
-        ? filteredDocs.map(doc => `
-            <div class="list-item" onclick="renderResource('${materialId}', '${doc.url}', '${doc.type}', '${doc.name}')">
-                <strong>${doc.type === 'video' || doc.type === 'video_mp4' ? '🎬' : '🖼️'} Ver ${doc.name}</strong>
-            </div>
-        `).join('')
-        : '';
+  const seccionDescripcion = material.description && material.description.trim() !== ""
+    ? `<div class="material-text">
+         <p><strong>Descripción:</strong></p>
+         <p>${material.description}</p>
+       </div>`
+    : '';
 
-    const seccionDocumentacion = docsHTML !== '' ? `<hr><h3>Documentación y Recursos</h3>${docsHTML}` : '';
+  const seccionRecursos = buildMaterialResourcesHTML(materialId, material);
 
-    // --- NUEVA LÓGICA PARA LA DESCRIPCIÓN ---
-    const seccionDescripcion = material.description && material.description.trim() !== "" 
-        ? `<div class="material-text">
-                <p><strong>Descripción:</strong></p>
-                <p>${material.description}</p>
-           </div>` 
-        : '';
+  const content = `
+    <div class="material-detail-container" style="${!mainPhoto && !seccionDescripcion ? 'display:none;' : ''}">
+      ${mainPhoto ? `<img src="${mainPhoto.url}" class="material-main-img" alt="${material.name}" draggable="false">` : ''}
+      ${seccionDescripcion}
+    </div>
+    ${seccionRecursos}
+  `;
 
-    const content = `
-        <div class="material-detail-container" style="${!mainPhoto && !seccionDescripcion ? 'display:none;' : ''}">
-            ${mainPhoto ? `<img src="${mainPhoto.url}" class="material-main-img">` : ''} 
-            ${seccionDescripcion}
-        </div>
-        ${seccionDocumentacion}
-    `;
-
-    render(content, material.name, { level: 5, materialId: materialId }, isBack);
+  render(content, material.name, { level: 5, materialId }, isBack);
 }
 
 /// --- NIVEL 6: Renderizado de Recurso a Pantalla Completa -- ///
@@ -716,18 +781,8 @@ function showGlobalMaterialDetail(materialId, isBack = false) {
     // 2. Lógica de Documentos (Recuperada de tu showMaterialDetails original)
     const documentosValidos = (material.docs || []).filter(doc => doc.url && doc.name);
     const mainPhoto = documentosValidos.find(doc => doc.type === 'photo');
-    const filteredDocs = documentosValidos.filter(doc => doc !== mainPhoto);
 
-    const docsHTML = filteredDocs.length > 0 
-        ? filteredDocs.map(doc => `
-            <div class="list-item" onclick="renderResource('${materialId}', '${doc.url}', '${doc.type}', '${doc.name}')">
-                <strong>${doc.type === 'video' || doc.type === 'video_mp4' ? '🎬' : '🖼️'} Ver ${doc.name}</strong>
-            </div>`).join('')
-        : ''; // Si no hay nada, queda totalmente vacío
-
-	// 5. En el bloque de 'content', mostramos el título solo si hay documentos
-	const seccionDocumentacion = docsHTML !== '' ? `<hr><h3>Documentación y Recursos</h3>${docsHTML}` : '';
-
+    
 	// --- NUEVA LÓGICA PARA LA DESCRIPCIÓN ---
     const seccionDescripcion = material.description && material.description.trim() !== "" 
         ? `<div class="material-text">
@@ -735,6 +790,8 @@ function showGlobalMaterialDetail(materialId, isBack = false) {
                 <p>${material.description}</p>
            </div>` 
         : '';
+
+	const seccionRecursos = buildMaterialResourcesHTML(materialId, material);
 	
     const content = `
         <div class="material-detail-container" style="${!mainPhoto && !seccionDescripcion ? 'display:none;' : ''}">
@@ -745,7 +802,7 @@ function showGlobalMaterialDetail(materialId, isBack = false) {
             <h3 style="color: #AA1915; margin-top: 0;">📍 Ubicación en Vehículos</h3>
             ${ubicacionesHTML}
         </div>
-        ${seccionDocumentacion}
+        ${seccionRecursos}
     `;
 
     render(content, material.name, { level: 5, materialId: materialId, section: 'material_global' }, isBack);
@@ -947,19 +1004,42 @@ document.addEventListener('DOMContentLoaded', () => {
   initServiceWorkerUpdates().catch(console.error);
 });
 
-function forzarActualizacion() {
-  if (!swRegistration) return window.location.reload();
+async function forzarActualizacion() {
+  const banner = document.getElementById('update-banner');
+  const btn = banner?.querySelector('button');
 
-  const waiting = swRegistration.waiting;
-  if (waiting) {
-    // Pide al SW nuevo que se active YA
-    waiting.postMessage({ type: 'SKIP_WAITING' });
-    return;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Actualizando…';
   }
 
-  // Si no hay waiting, intentamos buscar update y mostramos mensaje
-  swRegistration.update().catch(() => {});
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    const waiting = reg?.waiting || swRegistration?.waiting;
+
+    if (waiting) {
+      // Pedimos al SW nuevo que se active YA
+      waiting.postMessage({ type: 'SKIP_WAITING' });
+
+      // Importante: quitamos el banner ya para que no se quede “pegado”
+      if (banner) banner.remove();
+
+      // Fallback: aunque controllerchange no dispare, recargamos
+      setTimeout(() => window.location.reload(), 800);
+      return;
+    }
+
+    // Si por lo que sea no hay waiting, forzamos búsqueda y recargamos
+    await (reg || swRegistration)?.update?.();
+  } catch (e) {
+    // da igual: recargamos abajo
+  }
+
+  if (banner) banner.remove();
+  window.location.reload();
 }
+
+
 
 
 
