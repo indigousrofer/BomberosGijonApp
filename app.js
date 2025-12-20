@@ -72,29 +72,6 @@ function navigateToSection(id) {
     if (id === 'calendario') renderCalendarioSection(); // ID de data.js
 }
 
-function lockPageZoom(enable) {
-  const meta = document.querySelector('meta[name="viewport"]');
-  if (!meta) return;
-
-  if (enable) {
-    if (__prevViewportContent == null) {
-      __prevViewportContent = meta.getAttribute("content") || "";
-    }
-    // Bloquea zoom de página (pero tu pinch del PDF seguirá funcionando)
-    meta.setAttribute(
-      "content",
-      "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-    );
-  } else {
-    if (__prevViewportContent != null) {
-      meta.setAttribute("content", __prevViewportContent);
-      __prevViewportContent = null;
-    } else {
-      meta.setAttribute("content", "width=device-width, initial-scale=1.0");
-    }
-  }
-}
-
 // --- FUNCIÓN RENDER del mapa ---
 // --- NIVEL 1: SECCIÓN DE MAPA (ACTUALIZADA) ---
 async function renderMapaSection(isBack = false) { // <--- Añadir isBack
@@ -171,10 +148,6 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
 function render(contentHTML, title, state, isBack = false) {
     appContent.innerHTML = contentHTML;
     document.querySelector('header h1').textContent = title;
-
-	// Bloquea zoom de página SOLO en PDFs
-	if (state && state.type === "pdf") lockPageZoom(true);
-	else lockPageZoom(false);
 
     // Solo añadimos al historial si vamos HACIA ADELANTE
     if (!isBack) {
@@ -554,322 +527,64 @@ function showMaterialDetails(materialId, isBack = false) {
 
 /// --- NIVEL 6: Renderizado de Recurso a Pantalla Completa -- ///
 /// ---------------------------------------------------------- ///
-function renderResource(materialId, url, type, resourceName, isBack = false) {
-    if (type === "pdf") {
-	  const contentPdf = `
-	    <div class="pdfjs-wrapper">
-	      <div class="pdfjs-toolbar">
-	        <button onclick="pdfZoomOut()" class="pdfjs-btn">−</button>
-	        <button onclick="pdfZoomIn()" class="pdfjs-btn">+</button>
-	
-	        <!-- TU BOTÓN DE DESCARGA -->
-	        <a href="${url}" download target="_blank" rel="noopener noreferrer" class="pdfjs-download">
-	          Descargar
-	        </a>
-	
-	        <span id="pdfjs-page-info" class="pdfjs-info"></span>
-	      </div>
-	
-	      <div id="pdfjs-scroll" class="pdfjs-scroll">
-	        <div id="pdfjs-loading" class="pdfjs-loading">
-	          <div class="loader"></div>
-	          <p>Cargando PDF…</p>
-	        </div>
-	
-	        <!-- Aquí se pintan TODAS las páginas -->
-	        <div id="pdfjs-pages" class="pdfjs-pages"></div>
-	      </div>
-	    </div>
-	  `;
-	
-	  render(
-	    contentPdf,
-	    resourceName,
-	    { level: 6, materialId, url, type, resourceName },
-	    isBack
-	  );
-	
-	  setTimeout(() => openPdfWithPdfjs(url), 0);
-	  return;
-	}
-
-
-    // Lógica para otros recursos (fotos/vídeos)
-    let content = '';
-    if (type === 'video' || type === 'video_mp4') {
-        content = `<div class="video-container centered-resource"><iframe src="${url}" frameborder="0" allowfullscreen></iframe></div>`;
-    } else if (type === 'photo') {
-        content = `<img src="${url}" class="centered-resource">`;
-    }
-    
-    render(`<div class="resource-container-wrapper">${content}</div>`, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
-}
-
-/// ------------------------------- ///
-/// FUNCIONES DE LA LIBRERIA PDF.JS ///
-/// ------------------------------- ///
-let __pdfDoc = null;
-let __pdfScale = 1;       // escala base real (re-render)
-let __pdfFitScale = 1;    // escala “fit to width”
-let __pdfRenderToken = 0; // para cancelar renders antiguos
-
-// Estado pinch
-let __pinch = {
-  active: false,
-  pointers: new Map(),
-
-  startDist: 0,
-  startScale: 1,
-  previewScale: 1,
-
-  originX: 0,
-  originY: 0,
-
-  midClientX: 0,
-  midClientY: 0,
-
-  raf: 0
-};
-
-async function openPdfWithPdfjs(url) {
+function driveToDirectDownload(url) {
   try {
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+    const u = new URL(url);
 
-    const loadingEl = document.getElementById("pdfjs-loading");
-    const pagesEl = document.getElementById("pdfjs-pages");
-    const scrollEl = document.getElementById("pdfjs-scroll");
-    if (!pagesEl || !scrollEl) return;
+    // /file/d/<ID>/view
+    const m = u.pathname.match(/\/file\/d\/([^/]+)/);
+    if (m && m[1]) return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(m[1])}`;
 
-    pagesEl.innerHTML = "";
-    if (loadingEl) loadingEl.style.display = "block";
+    // ?id=<ID>
+    const id = u.searchParams.get("id");
+    if (id) return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`;
 
-    __pdfDoc = await pdfjsLib.getDocument(url).promise;
-
-    // Calcula escala inicial “fit to width” con la primera página
-    __pdfFitScale = await computeFitScale(__pdfDoc, scrollEl);
-    __pdfScale = __pdfFitScale;
-
-    setupPinchZoom(scrollEl, pagesEl);
-    await renderAllPages(scrollEl);
-
-    if (loadingEl) loadingEl.style.display = "none";
-    updatePageInfo();
-  } catch (err) {
-    console.error("PDF.js error:", err);
-    const loadingEl = document.getElementById("pdfjs-loading");
-    if (loadingEl) {
-      loadingEl.innerHTML = `
-        <p style="color:#AA1915; font-weight:bold;">No se pudo abrir el PDF dentro de la app.</p>
-        <p style="color:#666;">Puede ser CORS (Drive/externo). Puedes abrirlo fuera:</p>
-        <p><a href="${url}" target="_blank" rel="noopener noreferrer">Abrir PDF</a></p>
-      `;
-    }
+    return url;
+  } catch {
+    return url;
   }
 }
 
-async function computeFitScale(pdfDoc, scrollEl) {
-  const page1 = await pdfDoc.getPage(1);
-  const viewport1 = page1.getViewport({ scale: 1 });
-  const padding = 24; // ~12px left + 12px right del scroll
-  const availableWidth = Math.max(320, scrollEl.clientWidth - padding);
-  return availableWidth / viewport1.width;
-}
+function renderResource(materialId, url, type, resourceName, isBack = false) {
+  if (type === "pdf") {
+    const material = FIREBASE_DATA.MATERIALS[materialId];
+    const docEntry = (material?.docs || []).find(d => d.url === url);
 
-function updatePageInfo() {
-  const info = document.getElementById("pdfjs-page-info");
-  if (info && __pdfDoc) info.textContent = `${__pdfDoc.numPages} páginas`;
-}
+    // Tu URL de descarga viene en doc.url_download
+    let downloadUrl = docEntry?.url_download ? driveToDirectDownload(docEntry.url_download) : url;
 
-async function renderAllPages(scrollEl) {
-  if (!__pdfDoc) return;
+    const contentPdf = `
+      <div class="pdf-basic">
+        <a class="pdf-download"
+           href="${downloadUrl}"
+           target="_blank"
+           rel="noopener noreferrer"
+           download>
+          Descargar
+        </a>
 
-  const token = ++__pdfRenderToken;
-  const pagesEl = document.getElementById("pdfjs-pages");
-  if (!pagesEl) return;
+        <!-- visor básico dentro de la app -->
+        <iframe class="pdf-frame"
+                src="${url}"
+                title="${resourceName}"
+                loading="lazy"></iframe>
+      </div>
+    `;
 
-  pagesEl.innerHTML = "";
-
-  // Render secuencial para no petar memoria en móviles
-  for (let p = 1; p <= __pdfDoc.numPages; p++) {
-    if (token !== __pdfRenderToken) return; // cancelado
-
-    const canvas = document.createElement("canvas");
-    canvas.setAttribute("data-page", String(p));
-    pagesEl.appendChild(canvas);
-
-    await renderPageToCanvas(p, canvas);
+    render(contentPdf, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
+    return;
   }
+
+  // resto igual (fotos/vídeos)
+  let content = '';
+  if (type === 'video' || type === 'video_mp4') {
+    content = `<div class="video-container centered-resource"><iframe src="${url}" frameborder="0" allowfullscreen></iframe></div>`;
+  } else if (type === 'photo') {
+    content = `<img src="${url}" class="centered-resource">`;
+  }
+
+  render(`<div class="resource-container-wrapper">${content}</div>`, resourceName, { level: 6, materialId, url, type, resourceName }, isBack);
 }
-
-async function renderPageToCanvas(pageNumber, canvas) {
-  const page = await __pdfDoc.getPage(pageNumber);
-  const viewport = page.getViewport({ scale: __pdfScale });
-
-  const dpr = window.devicePixelRatio || 1;
-  const ctx = canvas.getContext("2d", { alpha: false });
-
-  canvas.width = Math.floor(viewport.width * dpr);
-  canvas.height = Math.floor(viewport.height * dpr);
-
-  // Mantén tamaño CSS al viewport (para que “encaje” y no se corte)
-  canvas.style.width = `${Math.floor(viewport.width)}px`;
-  canvas.style.height = `${Math.floor(viewport.height)}px`;
-
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  await page.render({ canvasContext: ctx, viewport }).promise;
-}
-
-function pdfZoomIn() {
-  setPdfScale(__pdfScale * 1.15);
-}
-
-function pdfZoomOut() {
-  setPdfScale(__pdfScale / 1.15);
-}
-
-function setPdfScale(newScale) {
-  // límites razonables
-  const clamped = Math.max(__pdfFitScale * 0.6, Math.min(newScale, __pdfFitScale * 4));
-  __pdfScale = clamped;
-
-  // Re-render todas las páginas
-  const scrollEl = document.getElementById("pdfjs-scroll");
-  if (!scrollEl) return;
-  renderAllPages(scrollEl).then(updatePageInfo);
-}
-
-/* -----------------------------
-   Pinch-to-zoom (Pointer Events)
-   Preview con transform (suave) y al soltar re-render (nítido)
------------------------------- */
-function setupPinchZoom(scrollEl, pagesEl) {
-  // Evita que el navegador “coja” el pinch para zoom de página
-  // (además de lo del meta viewport que ya añadimos)
-  scrollEl.style.touchAction = "pan-y";
-
-  // Reset pinch state al abrir un PDF nuevo
-  __pinch.active = false;
-  __pinch.pointers.clear();
-  __pinch.startDist = 0;
-  __pinch.startScale = __pdfScale;
-  __pinch.previewScale = __pdfScale;
-  __pinch.originX = 0;
-  __pinch.originY = 0;
-  __pinch.midClientX = 0;
-  __pinch.midClientY = 0;
-
-  const onPointerDown = (e) => {
-    scrollEl.setPointerCapture?.(e.pointerId);
-    __pinch.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-    if (__pinch.pointers.size === 2) {
-      const [a, b] = Array.from(__pinch.pointers.values());
-
-      __pinch.active = true;
-      __pinch.startDist = dist(a, b);
-      __pinch.startScale = __pdfScale;
-      __pinch.previewScale = __pdfScale;
-
-      // Centro de los dedos en coords de pantalla
-      __pinch.midClientX = (a.x + b.x) / 2;
-      __pinch.midClientY = (a.y + b.y) / 2;
-
-      // Convertimos ese centro a coordenadas “contenido” dentro del pagesEl:
-      // (posición dentro del elemento + scroll actual)
-      const pagesRect = pagesEl.getBoundingClientRect();
-      __pinch.originX = (__pinch.midClientX - pagesRect.left) + scrollEl.scrollLeft;
-      __pinch.originY = (__pinch.midClientY - pagesRect.top) + scrollEl.scrollTop;
-    }
-  };
-
-  const onPointerMove = (e) => {
-    if (!__pinch.pointers.has(e.pointerId)) return;
-    __pinch.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-    if (__pinch.active && __pinch.pointers.size === 2) {
-      e.preventDefault();
-
-      const [a, b] = Array.from(__pinch.pointers.values());
-      const d = dist(a, b);
-      if (__pinch.startDist <= 0) return;
-
-      // Actualiza centro (por si los dedos se desplazan mientras pinchas)
-      __pinch.midClientX = (a.x + b.x) / 2;
-      __pinch.midClientY = (a.y + b.y) / 2;
-
-      // Recalcula el “punto de anclaje” en coordenadas de contenido
-      const pagesRect = pagesEl.getBoundingClientRect();
-      __pinch.originX = (__pinch.midClientX - pagesRect.left) + scrollEl.scrollLeft;
-      __pinch.originY = (__pinch.midClientY - pagesRect.top) + scrollEl.scrollTop;
-
-      // Escala objetivo (preview)
-      const ratio = d / __pinch.startDist;
-      const target = __pinch.startScale * ratio;
-
-      __pinch.previewScale = Math.max(__pdfFitScale * 0.6, Math.min(target, __pdfFitScale * 4));
-
-      // Preview suave: transform sin re-render continuo
-      const factor = __pinch.previewScale / __pdfScale;
-      schedulePreviewTransform(pagesEl, __pinch.originX, __pinch.originY, factor);
-    }
-  };
-
-  const endPinch = () => {
-    if (!__pinch.active) return;
-    __pinch.active = false;
-
-    // Quitar preview transform
-    pagesEl.style.transform = "";
-
-    // Mantener en pantalla la zona bajo los dedos al aplicar el re-render:
-    // Ajustamos scroll para compensar el cambio de escala (aprox pero efectivo).
-    const factor = __pinch.previewScale / __pdfScale;
-    const containerRect = scrollEl.getBoundingClientRect();
-
-    const offsetX = __pinch.midClientX - containerRect.left;
-    const offsetY = __pinch.midClientY - containerRect.top;
-
-    const newScrollLeft = (__pinch.originX * factor) - offsetX;
-    const newScrollTop  = (__pinch.originY * factor) - offsetY;
-
-    // Aplicamos escala real (re-render)
-    setPdfScale(__pinch.previewScale);
-
-    // Después de que el DOM se estabilice un poco, aplicamos el scroll compensado
-    requestAnimationFrame(() => {
-      scrollEl.scrollLeft = Math.max(0, newScrollLeft);
-      scrollEl.scrollTop = Math.max(0, newScrollTop);
-    });
-  };
-
-  const onPointerUpOrCancel = (e) => {
-    __pinch.pointers.delete(e.pointerId);
-    if (__pinch.pointers.size < 2) endPinch();
-  };
-
-  scrollEl.onpointerdown = onPointerDown;
-  scrollEl.onpointermove = onPointerMove;
-  scrollEl.onpointerup = onPointerUpOrCancel;
-  scrollEl.onpointercancel = onPointerUpOrCancel;
-}
-
-function schedulePreviewTransform(el, originX, originY, scaleFactor) {
-  if (__pinch.raf) cancelAnimationFrame(__pinch.raf);
-  __pinch.raf = requestAnimationFrame(() => {
-    // Zoom alrededor del punto (originX, originY):
-    // translate(origin) -> scale -> translate(-origin)
-    el.style.transform = `translate(${originX}px, ${originY}px) scale(${scaleFactor}) translate(${-originX}px, ${-originY}px)`;
-  });
-}
-
-function dist(a, b) {
-  const dx = a.x - b.x;
-  const dy = a.y - b.y;
-  return Math.hypot(dx, dy);
-}
-
-
 
 /// SIMULACIÓN DE NIVEL 6 PARA EL PDF VIEWER
 function handleManualOpen(materialId, docName) {
@@ -1257,6 +972,7 @@ function forzarActualizacion() {
         window.location.reload(true);
     }
 }
+
 
 
 
