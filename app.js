@@ -12,6 +12,29 @@ const appContent = document.getElementById('app-content');
 const backButton = document.getElementById('back-button');
 const mainScroll = document.getElementById('main-scroll');
 const zoomLayer = document.getElementById('zoom-layer');
+const __appZoom = {
+  scale: 1,
+  x: 0,
+  y: 0,
+  min: 1,
+  max: 3,
+
+  pointers: new Map(),
+
+  // pinch
+  pinchStartDist: 1,
+  pinchStartScale: 1,
+  pinchRefPx: 0,
+  pinchRefPy: 0,
+
+  // pan
+  isPanning: false,
+  panStartX: 0,
+  panStartY: 0,
+  startX: 0,
+  startY: 0
+};
+
 
 let FIREBASE_DATA = { VEHICLES: [], DETAILS: {}, MATERIALS: {} };
 
@@ -19,7 +42,7 @@ let FIREBASE_DATA = { VEHICLES: [], DETAILS: {}, MATERIALS: {} };
 document.addEventListener('DOMContentLoaded', () => {
   if (!appContent || !backButton) return;
 
-  initZoom();
+  initAppZoom();
   initializeApp();
 });
 
@@ -133,7 +156,7 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
 
 // --- FUNCIÓN RENDER ---
 function render(contentHTML, title, state, isBack = false) {
-	resetZoom();
+	resetAppZoom();
   	if (mainScroll) { mainScroll.scrollTop = 0; mainScroll.scrollLeft = 0; }
 	
     appContent.innerHTML = contentHTML;
@@ -164,111 +187,142 @@ function render(contentHTML, title, state, isBack = false) {
 
 // ---------------------------------------------------- //
 // --- FUNCIONES PARA EL ZOOM ESPECIAL ---------------- //
-const __zoom = {
-  scale: 1, x: 0, y: 0,
-  min: 1, max: 3,
-  pointers: new Map(),
-  isPanning: false,
-  panStartX: 0, panStartY: 0,
-  startX: 0, startY: 0,
-  pinchStartDist: 0,
-  pinchStartScale: 1,
-  pinchStartX: 0,
-  pinchStartY: 0,
-  pinchRefPx: 0,
-  pinchRefPy: 0,
-};
+function __clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function __dist(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
+function __mid(a, b) { return { clientX: (a.clientX + b.clientX)/2, clientY: (a.clientY + b.clientY)/2 }; }
 
-function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-function dist(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
-function midpoint(a, b) { return { clientX: (a.clientX + b.clientX) / 2, clientY: (a.clientY + b.clientY) / 2 }; }
-
-function applyZoom() {
-  if (!zoomLayer) return;
-  zoomLayer.style.transform = `translate(${__zoom.x}px, ${__zoom.y}px) scale(${__zoom.scale})`;
-  if (mainScroll) mainScroll.style.overflow = (__zoom.scale > 1 ? 'hidden' : 'auto');
-}
-
-function resetZoom() {
-  __zoom.scale = 1;
-  __zoom.x = 0;
-  __zoom.y = 0;
-  __zoom.pointers.clear();
-  __zoom.isPanning = false;
-  applyZoom();
-}
-
-function initZoom() {
+function __clampToBounds() {
   if (!mainScroll || !zoomLayer) return;
-  applyZoom();
 
+  // tamaño del viewport visible
+  const vpW = mainScroll.clientWidth || 1;
+  const vpH = mainScroll.clientHeight || 1;
+
+  // tamaño del contenido (sin escala)
+  const baseW = zoomLayer.scrollWidth || 1;
+  const baseH = zoomLayer.scrollHeight || 1;
+
+  const scaledW = baseW * __appZoom.scale;
+  const scaledH = baseH * __appZoom.scale;
+
+  // Si el contenido escalado es más grande que el viewport, permitimos moverse.
+  // Si no, lo “pegamos” a 0 para que no haya huecos raros.
+  const minX = Math.min(0, vpW - scaledW);
+  const minY = Math.min(0, vpH - scaledH);
+
+  __appZoom.x = __clamp(__appZoom.x, minX, 0);
+  __appZoom.y = __clamp(__appZoom.y, minY, 0);
+}
+
+function applyAppZoom() {
+  if (!zoomLayer || !mainScroll) return;
+
+  __clampToBounds();
+  zoomLayer.style.transform = `translate(${__appZoom.x}px, ${__appZoom.y}px) scale(${__appZoom.scale})`;
+
+  // Cuando hay zoom, desactivamos el scroll nativo y activamos el pan propio
+  if (__appZoom.scale > 1) {
+    document.body.classList.add('zoom-active');
+    mainScroll.style.overflow = 'hidden';
+  } else {
+    document.body.classList.remove('zoom-active');
+    mainScroll.style.overflow = 'auto';
+  }
+}
+
+function resetAppZoom() {
+  __appZoom.scale = 1;
+  __appZoom.x = 0;
+  __appZoom.y = 0;
+  __appZoom.pointers.clear();
+  __appZoom.isPanning = false;
+  applyAppZoom();
+}
+
+function initAppZoom() {
+  if (!mainScroll || !zoomLayer) return;
+
+  applyAppZoom();
+
+  // IMPORTANTE: passive:false para poder usar preventDefault()
   mainScroll.addEventListener('pointerdown', (e) => {
     mainScroll.setPointerCapture?.(e.pointerId);
-    __zoom.pointers.set(e.pointerId, e);
+    __appZoom.pointers.set(e.pointerId, e);
 
-    if (__zoom.pointers.size === 1 && __zoom.scale > 1) {
-      __zoom.isPanning = true;
-      __zoom.panStartX = e.clientX;
-      __zoom.panStartY = e.clientY;
-      __zoom.startX = __zoom.x;
-      __zoom.startY = __zoom.y;
+    // Si ya estamos con zoom, evitamos que empiece scroll/gesto nativo
+    if (__appZoom.scale > 1) e.preventDefault();
+
+    if (__appZoom.pointers.size === 1 && __appZoom.scale > 1) {
+      __appZoom.isPanning = true;
+      __appZoom.panStartX = e.clientX;
+      __appZoom.panStartY = e.clientY;
+      __appZoom.startX = __appZoom.x;
+      __appZoom.startY = __appZoom.y;
     }
 
-    if (__zoom.pointers.size === 2) {
-      const [a, b] = Array.from(__zoom.pointers.values());
-      const mid = midpoint(a, b);
+    if (__appZoom.pointers.size === 2) {
+      const [a, b] = Array.from(__appZoom.pointers.values());
+      const mid = __mid(a, b);
 
       const rect = mainScroll.getBoundingClientRect();
       const mx = mid.clientX - rect.left;
       const my = mid.clientY - rect.top;
 
-      __zoom.pinchStartDist = dist(a, b) || 1;
-      __zoom.pinchStartScale = __zoom.scale;
-      __zoom.pinchStartX = __zoom.x;
-      __zoom.pinchStartY = __zoom.y;
+      __appZoom.pinchStartDist = __dist(a, b) || 1;
+      __appZoom.pinchStartScale = __appZoom.scale;
 
-      __zoom.pinchRefPx = (mx - __zoom.pinchStartX) / __zoom.pinchStartScale;
-      __zoom.pinchRefPy = (my - __zoom.pinchStartY) / __zoom.pinchStartScale;
+      // Punto bajo los dedos en coords del contenido (sin escala)
+      __appZoom.pinchRefPx = (mx - __appZoom.x) / __appZoom.scale;
+      __appZoom.pinchRefPy = (my - __appZoom.y) / __appZoom.scale;
 
-      __zoom.isPanning = false;
+      __appZoom.isPanning = false;
     }
-  }, { passive: true });
+  }, { passive: false });
 
   mainScroll.addEventListener('pointermove', (e) => {
-    if (!__zoom.pointers.has(e.pointerId)) return;
-    __zoom.pointers.set(e.pointerId, e);
+    if (!__appZoom.pointers.has(e.pointerId)) return;
+    __appZoom.pointers.set(e.pointerId, e);
 
-    if (__zoom.pointers.size === 2) {
-      const [a, b] = Array.from(__zoom.pointers.values());
-      const mid = midpoint(a, b);
+    // Si hay zoom o pinch activo, nosotros controlamos el gesto
+    if (__appZoom.scale > 1 || __appZoom.pointers.size === 2) {
+      e.preventDefault();
+    }
+
+    if (__appZoom.pointers.size === 2) {
+      const [a, b] = Array.from(__appZoom.pointers.values());
+      const mid = __mid(a, b);
 
       const rect = mainScroll.getBoundingClientRect();
       const mx = mid.clientX - rect.left;
       const my = mid.clientY - rect.top;
 
-      const d = dist(a, b) || 1;
-      __zoom.scale = clamp(__zoom.pinchStartScale * (d / __zoom.pinchStartDist), __zoom.min, __zoom.max);
+      const d = __dist(a, b) || 1;
+      const nextScale = __appZoom.pinchStartScale * (d / __appZoom.pinchStartDist);
+      __appZoom.scale = __clamp(nextScale, __appZoom.min, __appZoom.max);
 
-      __zoom.x = mx - __zoom.pinchRefPx * __zoom.scale;
-      __zoom.y = my - __zoom.pinchRefPy * __zoom.scale;
+      // Mantener el punto bajo los dedos estable
+      __appZoom.x = mx - __appZoom.pinchRefPx * __appZoom.scale;
+      __appZoom.y = my - __appZoom.pinchRefPy * __appZoom.scale;
 
-      applyZoom();
+      applyAppZoom();
       return;
     }
 
-    if (__zoom.pointers.size === 1 && __zoom.isPanning && __zoom.scale > 1) {
-      const dx = e.clientX - __zoom.panStartX;
-      const dy = e.clientY - __zoom.panStartY;
-      __zoom.x = __zoom.startX + dx;
-      __zoom.y = __zoom.startY + dy;
-      applyZoom();
+    if (__appZoom.pointers.size === 1 && __appZoom.isPanning && __appZoom.scale > 1) {
+      const dx = e.clientX - __appZoom.panStartX;
+      const dy = e.clientY - __appZoom.panStartY;
+      __appZoom.x = __appZoom.startX + dx;
+      __appZoom.y = __appZoom.startY + dy;
+      applyAppZoom();
     }
-  }, { passive: true });
+  }, { passive: false });
 
   const end = (e) => {
-    __zoom.pointers.delete(e.pointerId);
-    if (__zoom.pointers.size < 2) __zoom.isPanning = false;
-    if (__zoom.scale <= 1) resetZoom();
+    __appZoom.pointers.delete(e.pointerId);
+    if (__appZoom.pointers.size < 2) __appZoom.isPanning = false;
+
+    // Si vuelves a 1x, restauramos scroll normal
+    if (__appZoom.scale <= 1) resetAppZoom();
   };
 
   mainScroll.addEventListener('pointerup', end, { passive: true });
@@ -1422,6 +1476,7 @@ async function forzarActualizacion() {
   if (banner) banner.remove();
   window.location.reload();
 }
+
 
 
 
