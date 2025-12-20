@@ -911,6 +911,40 @@ body {
   -webkit-user-drag: none;
 }
 
+html, body { height: 100%; }
+
+/* Layout para que el header nunca desaparezca */
+body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* el scroll lo hace el main */
+}
+
+/* Header siempre visible */
+header {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+/* Zona scrolleable del contenido */
+#main-scroll {
+  flex: 1;
+  margin-top: 60px; /* altura del header */
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+
+  /* Permitimos pan, pero NO pinch nativo (lo hacemos nosotros) */
+  touch-action: pan-x pan-y;
+}
+
+/* Capa que se escala/traslada (solo contenido) */
+#zoom-layer {
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
 
 
 
