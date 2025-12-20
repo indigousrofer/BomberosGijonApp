@@ -1038,6 +1038,35 @@ header {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* “tabla” estética para PDFs */
+.docs-table { display: flex; flex-direction: column; gap: 10px; }
+
+.doc-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+
+  background: white;
+  border: 1px solid #ccc;
+  padding: 12px 14px;
+  border-radius: 8px;
+}
+
+.doc-name { font-weight: 700; }
+
+.doc-download-btn {
+  background: #AA1915;
+  color: white;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 2px solid white;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  -webkit-tap-highlight-color: transparent;
+}
+
 
 
 
