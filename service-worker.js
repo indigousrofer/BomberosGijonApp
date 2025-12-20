@@ -64,11 +64,21 @@ self.addEventListener('fetch', (event) => {
 
   // Navegación (index.html) → cache-first con fallback a network
   if (req.mode === 'navigate') {
-    event.respondWith(
-      caches.match('./index.html').then((cached) => cached || fetch(req))
-    );
-    return;
-  }
+     const url = new URL(req.url);
+   
+     // Solo aplicar "SPA fallback" a rutas SIN extensión (por ejemplo /materiales, /home)
+     // Si la ruta termina en .pdf, .png, .js, etc. => NO devolver index.html
+     const hasExtension = /\.[^/]+$/.test(url.pathname);
+   
+     if (!hasExtension) {
+       event.respondWith(
+         caches.match('./index.html').then((cached) => cached || fetch(req))
+       );
+       return;
+     }
+     // Si tiene extensión (ej: .pdf), seguimos con el handler normal (cache-first abajo)
+   }
+
 
   // Resto → cache-first
   event.respondWith(
@@ -85,3 +95,4 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
