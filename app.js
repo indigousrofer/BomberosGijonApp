@@ -1,9 +1,10 @@
 // 1. DEFINICIÓN DE VARIABLES GLOBALES E INICIALIZACIÓN
-const APP_VERSION = 'v38'; 
+const APP_VERSION = 'v39'; 
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let navigationHistory = [];
+let __prevViewportContent = null;
 let mesActualCal = new Date().getMonth();
 let añoActualCal = new Date().getFullYear();
 let turnoSeleccionadoCal = 'T2';
@@ -69,6 +70,29 @@ function navigateToSection(id) {
 	if (id === 'material_global') renderGlobalMaterialList();       // ID de data.js
     if (id === 'mapa') renderMapaSection();       // ID de data.js
     if (id === 'calendario') renderCalendarioSection(); // ID de data.js
+}
+
+function lockPageZoom(enable) {
+  const meta = document.querySelector('meta[name="viewport"]');
+  if (!meta) return;
+
+  if (enable) {
+    if (__prevViewportContent == null) {
+      __prevViewportContent = meta.getAttribute("content") || "";
+    }
+    // Bloquea zoom de página (pero tu pinch del PDF seguirá funcionando)
+    meta.setAttribute(
+      "content",
+      "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    );
+  } else {
+    if (__prevViewportContent != null) {
+      meta.setAttribute("content", __prevViewportContent);
+      __prevViewportContent = null;
+    } else {
+      meta.setAttribute("content", "width=device-width, initial-scale=1.0");
+    }
+  }
 }
 
 // --- FUNCIÓN RENDER del mapa ---
@@ -147,6 +171,10 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
 function render(contentHTML, title, state, isBack = false) {
     appContent.innerHTML = contentHTML;
     document.querySelector('header h1').textContent = title;
+
+	// Bloquea zoom de página SOLO en PDFs
+	if (state && state.type === "pdf") lockPageZoom(true);
+	else lockPageZoom(false);
 
     // Solo añadimos al historial si vamos HACIA ADELANTE
     if (!isBack) {
@@ -589,10 +617,18 @@ let __pdfRenderToken = 0; // para cancelar renders antiguos
 let __pinch = {
   active: false,
   pointers: new Map(),
+
   startDist: 0,
   startScale: 1,
   previewScale: 1,
-  raf: 0,
+
+  originX: 0,
+  originY: 0,
+
+  midClientX: 0,
+  midClientY: 0,
+
+  raf: 0
 };
 
 async function openPdfWithPdfjs(url) {
@@ -708,20 +744,42 @@ function setPdfScale(newScale) {
    Preview con transform (suave) y al soltar re-render (nítido)
 ------------------------------ */
 function setupPinchZoom(scrollEl, pagesEl) {
-  // Para que funcione en móviles sin “scroll accidental” al pinchar
-  scrollEl.style.touchAction = "pan-y pinch-zoom";
+  // Evita que el navegador “coja” el pinch para zoom de página
+  // (además de lo del meta viewport que ya añadimos)
+  scrollEl.style.touchAction = "pan-y";
+
+  // Reset pinch state al abrir un PDF nuevo
+  __pinch.active = false;
+  __pinch.pointers.clear();
+  __pinch.startDist = 0;
+  __pinch.startScale = __pdfScale;
+  __pinch.previewScale = __pdfScale;
+  __pinch.originX = 0;
+  __pinch.originY = 0;
+  __pinch.midClientX = 0;
+  __pinch.midClientY = 0;
 
   const onPointerDown = (e) => {
-    // Captura el puntero para seguir recibiendo eventos
     scrollEl.setPointerCapture?.(e.pointerId);
     __pinch.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
     if (__pinch.pointers.size === 2) {
       const [a, b] = Array.from(__pinch.pointers.values());
+
       __pinch.active = true;
       __pinch.startDist = dist(a, b);
       __pinch.startScale = __pdfScale;
       __pinch.previewScale = __pdfScale;
+
+      // Centro de los dedos en coords de pantalla
+      __pinch.midClientX = (a.x + b.x) / 2;
+      __pinch.midClientY = (a.y + b.y) / 2;
+
+      // Convertimos ese centro a coordenadas “contenido” dentro del pagesEl:
+      // (posición dentro del elemento + scroll actual)
+      const pagesRect = pagesEl.getBoundingClientRect();
+      __pinch.originX = (__pinch.midClientX - pagesRect.left) + scrollEl.scrollLeft;
+      __pinch.originY = (__pinch.midClientY - pagesRect.top) + scrollEl.scrollTop;
     }
   };
 
@@ -736,14 +794,24 @@ function setupPinchZoom(scrollEl, pagesEl) {
       const d = dist(a, b);
       if (__pinch.startDist <= 0) return;
 
-      // escala preview
+      // Actualiza centro (por si los dedos se desplazan mientras pinchas)
+      __pinch.midClientX = (a.x + b.x) / 2;
+      __pinch.midClientY = (a.y + b.y) / 2;
+
+      // Recalcula el “punto de anclaje” en coordenadas de contenido
+      const pagesRect = pagesEl.getBoundingClientRect();
+      __pinch.originX = (__pinch.midClientX - pagesRect.left) + scrollEl.scrollLeft;
+      __pinch.originY = (__pinch.midClientY - pagesRect.top) + scrollEl.scrollTop;
+
+      // Escala objetivo (preview)
       const ratio = d / __pinch.startDist;
       const target = __pinch.startScale * ratio;
 
       __pinch.previewScale = Math.max(__pdfFitScale * 0.6, Math.min(target, __pdfFitScale * 4));
 
-      // Preview suave: transform (sin re-render continuo)
-      schedulePreviewTransform(pagesEl, __pinch.previewScale / __pdfScale);
+      // Preview suave: transform sin re-render continuo
+      const factor = __pinch.previewScale / __pdfScale;
+      schedulePreviewTransform(pagesEl, __pinch.originX, __pinch.originY, factor);
     }
   };
 
@@ -751,9 +819,28 @@ function setupPinchZoom(scrollEl, pagesEl) {
     if (!__pinch.active) return;
     __pinch.active = false;
 
-    // Quita preview transform y re-render a escala final
+    // Quitar preview transform
     pagesEl.style.transform = "";
+
+    // Mantener en pantalla la zona bajo los dedos al aplicar el re-render:
+    // Ajustamos scroll para compensar el cambio de escala (aprox pero efectivo).
+    const factor = __pinch.previewScale / __pdfScale;
+    const containerRect = scrollEl.getBoundingClientRect();
+
+    const offsetX = __pinch.midClientX - containerRect.left;
+    const offsetY = __pinch.midClientY - containerRect.top;
+
+    const newScrollLeft = (__pinch.originX * factor) - offsetX;
+    const newScrollTop  = (__pinch.originY * factor) - offsetY;
+
+    // Aplicamos escala real (re-render)
     setPdfScale(__pinch.previewScale);
+
+    // Después de que el DOM se estabilice un poco, aplicamos el scroll compensado
+    requestAnimationFrame(() => {
+      scrollEl.scrollLeft = Math.max(0, newScrollLeft);
+      scrollEl.scrollTop = Math.max(0, newScrollTop);
+    });
   };
 
   const onPointerUpOrCancel = (e) => {
@@ -761,18 +848,18 @@ function setupPinchZoom(scrollEl, pagesEl) {
     if (__pinch.pointers.size < 2) endPinch();
   };
 
-  // Evita duplicar listeners si vuelves a abrir PDFs
   scrollEl.onpointerdown = onPointerDown;
   scrollEl.onpointermove = onPointerMove;
   scrollEl.onpointerup = onPointerUpOrCancel;
   scrollEl.onpointercancel = onPointerUpOrCancel;
 }
 
-function schedulePreviewTransform(el, scaleFactor) {
+function schedulePreviewTransform(el, originX, originY, scaleFactor) {
   if (__pinch.raf) cancelAnimationFrame(__pinch.raf);
   __pinch.raf = requestAnimationFrame(() => {
-    // Escala visual (preview)
-    el.style.transform = `scale(${scaleFactor})`;
+    // Zoom alrededor del punto (originX, originY):
+    // translate(origin) -> scale -> translate(-origin)
+    el.style.transform = `translate(${originX}px, ${originY}px) scale(${scaleFactor}) translate(${-originX}px, ${-originY}px)`;
   });
 }
 
@@ -1170,6 +1257,7 @@ function forzarActualizacion() {
         window.location.reload(true);
     }
 }
+
 
 
 
