@@ -1077,6 +1077,10 @@ header {
   overflow: hidden !important;
 }
 
+/* Cuando hay zoom activo, desactivamos gestos nativos para poder hacer pan propio */
+body.zoom-active #main-scroll {
+  touch-action: none;              /* clave para que el navegador no "secuestre" el gesto */
+}
 
 
 
