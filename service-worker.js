@@ -1,4 +1,4 @@
-const CACHE_NAME = 'v39'; // Versión actualizada
+const CACHE_NAME = 'BomberosGijonApp-v39'; // Versión actualizada
 const urlsToCache = [
   './',
   './index.html',
@@ -41,6 +41,7 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   }
 });
+
 
 
 
