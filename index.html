@@ -16,7 +16,7 @@
 	<script>
 	    if ('serviceWorker' in navigator) {
 	        window.addEventListener('load', () => {
-	            navigator.serviceWorker.register('/BomberosGijonApp/service-worker.js?v=' + Date.now())
+	            navigator.serviceWorker.register('/BomberosGijonApp/service-worker.js')
 	                .then(reg => console.log('Service Worker registrado con éxito', reg))
 	                .catch(err => console.log('Error al registrar Service Worker', err));
 	        });
@@ -50,6 +50,7 @@
 </body>
 
 </html>
+
 
 
 
