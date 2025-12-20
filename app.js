@@ -707,10 +707,16 @@ function __mid2(a, b) {
 }
 
 function openImageViewer(src, alt = "") {
-  // Bloqueamos zoom de página mientras el visor está abierto (reutilizamos tu función)
+  // Bloquea scroll del fondo
+  __prevBodyOverflow = document.body.style.overflow;
   document.body.style.overflow = 'hidden';
 
-  // Si ya existe, lo cerramos primero para resetear estado
+  const mainScroll = document.getElementById('main-scroll');
+  if (mainScroll) {
+    __prevMainOverflow = mainScroll.style.overflow;
+    mainScroll.classList.add('no-scroll');
+  }
+
   closeImageViewer();
 
   __imgZoom.scale = 1;
@@ -867,7 +873,15 @@ function closeImageViewer() {
     __imgViewer.remove();
     __imgViewer = null;
   }
-  document.body.style.overflow = '';
+
+  // Restaura scroll del fondo
+  document.body.style.overflow = __prevBodyOverflow;
+
+  const mainScroll = document.getElementById('main-scroll');
+  if (mainScroll) {
+    mainScroll.classList.remove('no-scroll');
+    mainScroll.style.overflow = __prevMainOverflow;
+  }
 }
 
 function showMaterialDetails(materialId, isBack = false) {
@@ -1403,6 +1417,7 @@ async function forzarActualizacion() {
   if (banner) banner.remove();
   window.location.reload();
 }
+
 
 
 
