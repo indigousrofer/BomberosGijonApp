@@ -901,6 +901,17 @@ body {
   border:2px solid white;
 }
 
+/* Quitar highlight azul en imágenes (no clicables) */
+.material-main-img,
+.material-extra-img {
+  cursor: default !important;
+  pointer-events: none;               /* no click, no overlay */
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+
 
 
 
