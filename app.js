@@ -38,6 +38,9 @@ const __appZoom = {
   normalizedScroll: false,
   lastScrollLeft: 0,
   lastScrollTop: 0,
+  baseScrollLeft: 0,
+  baseScrollTop: 0,
+  normalizedScroll: false
 };
 
 
@@ -236,13 +239,16 @@ function applyAppZoom() {
 }
 
 function resetAppZoom() {
-  // Si venimos de zoom transform, convertimos translate -> scroll
-  if (mainScroll && __appZoom.scale > 1) {
-    const sl = Math.max(0, -__appZoom.x);
-    const st = Math.max(0, -__appZoom.y);
-    mainScroll.style.overflow = 'auto';
-    mainScroll.scrollLeft = sl;
-    mainScroll.scrollTop = st;
+  if (mainScroll) {
+    // Si estuvimos en modo "normalizedScroll", restauramos la posición real
+    if (__appZoom.normalizedScroll) {
+      const finalScrollLeft = Math.max(0, __appZoom.baseScrollLeft + (-__appZoom.x));
+      const finalScrollTop  = Math.max(0, __appZoom.baseScrollTop  + (-__appZoom.y));
+
+      mainScroll.style.overflow = 'auto';
+      mainScroll.scrollLeft = finalScrollLeft;
+      mainScroll.scrollTop = finalScrollTop;
+    }
   }
 
   __appZoom.scale = 1;
@@ -250,7 +256,10 @@ function resetAppZoom() {
   __appZoom.y = 0;
   __appZoom.pointers.clear();
   __appZoom.isPanning = false;
+
   __appZoom.normalizedScroll = false;
+  __appZoom.baseScrollLeft = 0;
+  __appZoom.baseScrollTop = 0;
 
   applyAppZoom();
 }
@@ -334,14 +343,20 @@ function initAppZoom() {
 	
 	  // ✅ Cuando pasamos de 1x a >1x por primera vez, movemos scroll -> translate
 	  if (__appZoom.scale > 1 && !__appZoom.normalizedScroll) {
-	    __appZoom.x -= sl;
-	    __appZoom.y -= st;
-	
-	    mainScroll.scrollLeft = 0;
-	    mainScroll.scrollTop = 0;
-	
-	    __appZoom.normalizedScroll = true;
-	  }
+		  // Guardamos el scroll real que había antes de pasar a pan por translate
+		  __appZoom.baseScrollLeft = sl;
+		  __appZoom.baseScrollTop = st;
+		
+		  // Convertimos scroll -> translate
+		  __appZoom.x -= sl;
+		  __appZoom.y -= st;
+		
+		  // A partir de aquí el scroll real queda a 0 y todo se mueve por translate
+		  mainScroll.scrollLeft = 0;
+		  mainScroll.scrollTop = 0;
+		
+		  __appZoom.normalizedScroll = true;
+      }
 	
 	  applyAppZoom();
 	  return;
@@ -361,7 +376,10 @@ function initAppZoom() {
     if (__appZoom.pointers.size < 2) __appZoom.isPanning = false;
 
     // Si vuelves a 1x, restauramos scroll normal
-    if (__appZoom.scale <= 1) resetAppZoom();
+    if (__appZoom.scale <= 1.02) {
+	  __appZoom.scale = 1;
+	  resetAppZoom();
+	}
   };
 
   mainScroll.addEventListener('pointerup', end, { passive: true });
@@ -1515,6 +1533,7 @@ async function forzarActualizacion() {
   if (banner) banner.remove();
   window.location.reload();
 }
+
 
 
 
