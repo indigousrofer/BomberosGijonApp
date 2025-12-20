@@ -665,12 +665,220 @@ function buildMaterialResourcesHTML(materialId, material) {
   `;
 }
 
+// ---------------------------
+// VISOR DE IMÁGENES (overlay) con pinch-zoom + pan
+// ---------------------------
+let __imgViewer = null;
+let __imgViewerCleanup = null;
+
+const __imgZoom = {
+  scale: 1,
+  x: 0,
+  y: 0,
+  min: 1,
+  max: 4,
+
+  pointers: new Map(),
+
+  pinchStartDist: 0,
+  pinchStartScale: 1,
+  pinchRefPx: 0,
+  pinchRefPy: 0,
+
+  panStartX: 0,
+  panStartY: 0,
+  startX: 0,
+  startY: 0,
+  isPanning: false
+};
+
+function __clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
+function __dist2(a, b) {
+  const dx = a.clientX - b.clientX;
+  const dy = a.clientY - b.clientY;
+  return Math.hypot(dx, dy);
+}
+
+function __mid2(a, b) {
+  return { clientX: (a.clientX + b.clientX) / 2, clientY: (a.clientY + b.clientY) / 2 };
+}
+
+function openImageViewer(src, alt = "") {
+  // Bloqueamos zoom de página mientras el visor está abierto (reutilizamos tu función)
+  lockPageZoom(true);
+
+  // Si ya existe, lo cerramos primero para resetear estado
+  closeImageViewer();
+
+  __imgZoom.scale = 1;
+  __imgZoom.x = 0;
+  __imgZoom.y = 0;
+  __imgZoom.pointers.clear();
+  __imgZoom.isPanning = false;
+
+  const viewer = document.createElement("div");
+  viewer.id = "img-viewer";
+  viewer.innerHTML = `
+    <button class="img-viewer-close" onclick="closeImageViewer()">✕</button>
+    <div class="img-viewer-viewport">
+      <div class="img-viewer-layer">
+        <img src="${src}" alt="${alt}" draggable="false">
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(viewer);
+  __imgViewer = viewer;
+
+  const viewport = viewer.querySelector(".img-viewer-viewport");
+  const layer = viewer.querySelector(".img-viewer-layer");
+  const img = viewer.querySelector("img");
+
+  function clampToBounds() {
+    const vpRect = viewport.getBoundingClientRect();
+
+    // Tamaño base de la imagen ya “encajada” por CSS (max-width/max-height)
+    const baseW = img.clientWidth || 1;
+    const baseH = img.clientHeight || 1;
+
+    const scaledW = baseW * __imgZoom.scale;
+    const scaledH = baseH * __imgZoom.scale;
+
+    // Permitimos mover solo si la imagen escalada es más grande que el viewport
+    const minX = Math.min(0, vpRect.width - scaledW);
+    const minY = Math.min(0, vpRect.height - scaledH);
+
+    __imgZoom.x = __clamp(__imgZoom.x, minX, 0);
+    __imgZoom.y = __clamp(__imgZoom.y, minY, 0);
+  }
+
+  function apply() {
+    clampToBounds();
+    layer.style.transform = `translate(${__imgZoom.x}px, ${__imgZoom.y}px) scale(${__imgZoom.scale})`;
+  }
+
+  // Cuando la imagen carga, aplicamos por si cambia tamaños
+  img.addEventListener("load", () => apply(), { once: true });
+  apply();
+
+  const onPointerDown = (e) => {
+    viewport.setPointerCapture?.(e.pointerId);
+    __imgZoom.pointers.set(e.pointerId, e);
+
+    if (__imgZoom.pointers.size === 1 && __imgZoom.scale > 1) {
+      __imgZoom.isPanning = true;
+      __imgZoom.panStartX = e.clientX;
+      __imgZoom.panStartY = e.clientY;
+      __imgZoom.startX = __imgZoom.x;
+      __imgZoom.startY = __imgZoom.y;
+    }
+
+    if (__imgZoom.pointers.size === 2) {
+      const [a, b] = Array.from(__imgZoom.pointers.values());
+      const mid = __mid2(a, b);
+
+      const rect = viewport.getBoundingClientRect();
+      const mx = mid.clientX - rect.left;
+      const my = mid.clientY - rect.top;
+
+      __imgZoom.pinchStartDist = __dist2(a, b) || 1;
+      __imgZoom.pinchStartScale = __imgZoom.scale;
+
+      // Punto de referencia (en coords del contenido sin escalar)
+      __imgZoom.pinchRefPx = (mx - __imgZoom.x) / __imgZoom.scale;
+      __imgZoom.pinchRefPy = (my - __imgZoom.y) / __imgZoom.scale;
+
+      __imgZoom.isPanning = false;
+    }
+  };
+
+  const onPointerMove = (e) => {
+    if (!__imgZoom.pointers.has(e.pointerId)) return;
+    __imgZoom.pointers.set(e.pointerId, e);
+
+    // IMPORTANTE: al mover dedos, evitamos que el navegador intente gestos
+    e.preventDefault();
+
+    if (__imgZoom.pointers.size === 2) {
+      const [a, b] = Array.from(__imgZoom.pointers.values());
+      const mid = __mid2(a, b);
+
+      const rect = viewport.getBoundingClientRect();
+      const mx = mid.clientX - rect.left;
+      const my = mid.clientY - rect.top;
+
+      const d = __dist2(a, b) || 1;
+      const nextScale = __imgZoom.pinchStartScale * (d / __imgZoom.pinchStartDist);
+      __imgZoom.scale = __clamp(nextScale, __imgZoom.min, __imgZoom.max);
+
+      // Mantener el punto bajo los dedos estable
+      __imgZoom.x = mx - __imgZoom.pinchRefPx * __imgZoom.scale;
+      __imgZoom.y = my - __imgZoom.pinchRefPy * __imgZoom.scale;
+
+      apply();
+      return;
+    }
+
+    if (__imgZoom.pointers.size === 1 && __imgZoom.isPanning && __imgZoom.scale > 1) {
+      const dx = e.clientX - __imgZoom.panStartX;
+      const dy = e.clientY - __imgZoom.panStartY;
+      __imgZoom.x = __imgZoom.startX + dx;
+      __imgZoom.y = __imgZoom.startY + dy;
+      apply();
+    }
+  };
+
+  const onPointerUp = (e) => {
+    __imgZoom.pointers.delete(e.pointerId);
+    if (__imgZoom.pointers.size < 2) __imgZoom.isPanning = false;
+
+    // Si vuelves a escala 1, reseteamos desplazamiento para que quede centrado
+    if (__imgZoom.scale <= 1) {
+      __imgZoom.scale = 1;
+      __imgZoom.x = 0;
+      __imgZoom.y = 0;
+      apply();
+    }
+  };
+
+  viewport.addEventListener("pointerdown", onPointerDown, { passive: false });
+  viewport.addEventListener("pointermove", onPointerMove, { passive: false });
+  viewport.addEventListener("pointerup", onPointerUp, { passive: true });
+  viewport.addEventListener("pointercancel", onPointerUp, { passive: true });
+
+  // Guardamos cleanup
+  __imgViewerCleanup = () => {
+    viewport.removeEventListener("pointerdown", onPointerDown);
+    viewport.removeEventListener("pointermove", onPointerMove);
+    viewport.removeEventListener("pointerup", onPointerUp);
+    viewport.removeEventListener("pointercancel", onPointerUp);
+  };
+}
+
+function closeImageViewer() {
+  if (__imgViewerCleanup) {
+    __imgViewerCleanup();
+    __imgViewerCleanup = null;
+  }
+  if (__imgViewer) {
+    __imgViewer.remove();
+    __imgViewer = null;
+  }
+  lockPageZoom(false);
+}
+
 function showMaterialDetails(materialId, isBack = false) {
   const material = FIREBASE_DATA.MATERIALS[materialId];
   if (!material) return;
 
   const documentosValidos = (material.docs || []).filter(doc => doc.url && doc.name);
   const mainPhoto = documentosValidos.find(doc => doc.type === 'photo');
+
+  const pdfs = documentosValidos.filter(doc => doc.type === 'pdf');
+  const photos = documentosValidos.filter(doc => doc.type === 'photo' && doc !== mainPhoto);
 
   const seccionDescripcion = material.description && material.description.trim() !== ""
     ? `<div class="material-text">
@@ -679,14 +887,54 @@ function showMaterialDetails(materialId, isBack = false) {
        </div>`
     : '';
 
-  const seccionRecursos = buildMaterialResourcesHTML(materialId, material);
+  // PDFs: lista + botón descargar a la derecha
+  const pdfHTML = pdfs.length ? pdfs.map(doc => {
+    const downloadUrl = doc.url_download ? driveToDirectDownload(doc.url_download) : doc.url;
+    return `
+      <div class="doc-row">
+        <div class="doc-name">${doc.name}</div>
+        <a class="doc-download-btn"
+           href="${downloadUrl}"
+           target="_blank"
+           rel="noopener noreferrer"
+           download>Descargar</a>
+      </div>
+    `;
+  }).join('') : `<p class="muted">No hay documentos PDF.</p>`;
+
+  // Imágenes: miniaturas a ancho completo, clic abre visor
+  const photosHTML = photos.length ? photos.map(doc => `
+    <button class="img-thumb-btn" onclick='openImageViewer(${JSON.stringify(doc.url)}, ${JSON.stringify(doc.name)})'>
+      <img src="${doc.url}" alt="${doc.name}" class="material-thumb-img" draggable="false">
+    </button>
+  `).join('') : `<p class="muted">No hay imágenes.</p>`;
 
   const content = `
-    <div class="material-detail-container" style="${!mainPhoto && !seccionDescripcion ? 'display:none;' : ''}">
-      ${mainPhoto ? `<img src="${mainPhoto.url}" class="material-main-img" alt="${material.name}" draggable="false">` : ''}
+    <div class="material-detail-container">
+      ${mainPhoto ? `
+        <button class="img-thumb-btn" onclick='openImageViewer(${JSON.stringify(mainPhoto.url)}, ${JSON.stringify(material.name)})'>
+          <img src="${mainPhoto.url}" class="material-main-img" alt="${material.name}" draggable="false">
+        </button>
+      ` : ''}
       ${seccionDescripcion}
     </div>
-    ${seccionRecursos}
+
+    <hr>
+    <h3>Documentación y Recursos</h3>
+
+    <div class="docs-subsection">
+      <h4 class="docs-subsection-title">Documentos pdf</h4>
+      <div class="docs-table">
+        ${pdfHTML}
+      </div>
+    </div>
+
+    <div class="docs-subsection">
+      <h4 class="docs-subsection-title">Imágenes</h4>
+      <div class="docs-images">
+        ${photosHTML}
+      </div>
+    </div>
   `;
 
   render(content, material.name, { level: 5, materialId }, isBack);
@@ -1155,6 +1403,7 @@ async function forzarActualizacion() {
   if (banner) banner.remove();
   window.location.reload();
 }
+
 
 
 
