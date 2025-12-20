@@ -873,7 +873,8 @@ body {
 .pdfjs-toolbar,
 .pdfjs-scroll,
 .pdfjs-pages {
-  box-sizing: border-box;
+  width: 100%;
+  transform-origin: 0 0; /* importante */
 }
 
 .pdfjs-wrapper {
@@ -941,6 +942,7 @@ body {
   border-radius: 8px;
   max-width: 100%;
 }
+
 
 
 
