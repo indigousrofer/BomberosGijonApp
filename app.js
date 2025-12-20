@@ -32,7 +32,12 @@ const __appZoom = {
   panStartX: 0,
   panStartY: 0,
   startX: 0,
-  startY: 0
+  startY: 0,
+
+  // correción punto central zoom fuera de imágenes
+  normalizedScroll: false,
+  lastScrollLeft: 0,
+  lastScrollTop: 0,
 };
 
 
@@ -231,11 +236,22 @@ function applyAppZoom() {
 }
 
 function resetAppZoom() {
+  // Si venimos de zoom transform, convertimos translate -> scroll
+  if (mainScroll && __appZoom.scale > 1) {
+    const sl = Math.max(0, -__appZoom.x);
+    const st = Math.max(0, -__appZoom.y);
+    mainScroll.style.overflow = 'auto';
+    mainScroll.scrollLeft = sl;
+    mainScroll.scrollTop = st;
+  }
+
   __appZoom.scale = 1;
   __appZoom.x = 0;
   __appZoom.y = 0;
   __appZoom.pointers.clear();
   __appZoom.isPanning = false;
+  __appZoom.normalizedScroll = false;
+
   applyAppZoom();
 }
 
@@ -261,22 +277,30 @@ function initAppZoom() {
     }
 
     if (__appZoom.pointers.size === 2) {
-      const [a, b] = Array.from(__appZoom.pointers.values());
-      const mid = __mid(a, b);
-
-      const rect = mainScroll.getBoundingClientRect();
-      const mx = mid.clientX - rect.left;
-      const my = mid.clientY - rect.top;
-
-      __appZoom.pinchStartDist = __dist(a, b) || 1;
-      __appZoom.pinchStartScale = __appZoom.scale;
-
-      // Punto bajo los dedos en coords del contenido (sin escala)
-      __appZoom.pinchRefPx = (mx - __appZoom.x) / __appZoom.scale;
-      __appZoom.pinchRefPy = (my - __appZoom.y) / __appZoom.scale;
-
-      __appZoom.isPanning = false;
-    }
+	  const [a, b] = Array.from(__appZoom.pointers.values());
+	  const mid = __mid(a, b);
+	
+	  const rect = mainScroll.getBoundingClientRect();
+	  const mx = mid.clientX - rect.left;
+	  const my = mid.clientY - rect.top;
+	
+	  // ✅ IMPORTANTE: incluir scroll actual
+	  const sl = mainScroll.scrollLeft;
+	  const st = mainScroll.scrollTop;
+	
+	  __appZoom.lastScrollLeft = sl;
+	  __appZoom.lastScrollTop = st;
+	  __appZoom.normalizedScroll = false;
+	
+	  __appZoom.pinchStartDist = __dist(a, b) || 1;
+	  __appZoom.pinchStartScale = __appZoom.scale;
+	
+	  // ✅ Punto del contenido (sin escala) que está bajo el midpoint
+	  __appZoom.pinchRefPx = (mx + sl - __appZoom.x) / __appZoom.scale;
+	  __appZoom.pinchRefPy = (my + st - __appZoom.y) / __appZoom.scale;
+	
+	  __appZoom.isPanning = false;
+	}
   }, { passive: false });
 
   mainScroll.addEventListener('pointermove', (e) => {
@@ -289,24 +313,39 @@ function initAppZoom() {
     }
 
     if (__appZoom.pointers.size === 2) {
-      const [a, b] = Array.from(__appZoom.pointers.values());
-      const mid = __mid(a, b);
-
-      const rect = mainScroll.getBoundingClientRect();
-      const mx = mid.clientX - rect.left;
-      const my = mid.clientY - rect.top;
-
-      const d = __dist(a, b) || 1;
-      const nextScale = __appZoom.pinchStartScale * (d / __appZoom.pinchStartDist);
-      __appZoom.scale = __clamp(nextScale, __appZoom.min, __appZoom.max);
-
-      // Mantener el punto bajo los dedos estable
-      __appZoom.x = mx - __appZoom.pinchRefPx * __appZoom.scale;
-      __appZoom.y = my - __appZoom.pinchRefPy * __appZoom.scale;
-
-      applyAppZoom();
-      return;
-    }
+	  const [a, b] = Array.from(__appZoom.pointers.values());
+	  const mid = __mid(a, b);
+	
+	  const rect = mainScroll.getBoundingClientRect();
+	  const mx = mid.clientX - rect.left;
+	  const my = mid.clientY - rect.top;
+	
+	  // ✅ incluir scroll actual
+	  const sl = mainScroll.scrollLeft;
+	  const st = mainScroll.scrollTop;
+	
+	  const d = __dist(a, b) || 1;
+	  const nextScale = __appZoom.pinchStartScale * (d / __appZoom.pinchStartDist);
+	  __appZoom.scale = __clamp(nextScale, __appZoom.min, __appZoom.max);
+	
+	  // ✅ Mantener el punto bajo el midpoint estable (usando mx+scroll)
+	  __appZoom.x = (mx + sl) - __appZoom.pinchRefPx * __appZoom.scale;
+	  __appZoom.y = (my + st) - __appZoom.pinchRefPy * __appZoom.scale;
+	
+	  // ✅ Cuando pasamos de 1x a >1x por primera vez, movemos scroll -> translate
+	  if (__appZoom.scale > 1 && !__appZoom.normalizedScroll) {
+	    __appZoom.x -= sl;
+	    __appZoom.y -= st;
+	
+	    mainScroll.scrollLeft = 0;
+	    mainScroll.scrollTop = 0;
+	
+	    __appZoom.normalizedScroll = true;
+	  }
+	
+	  applyAppZoom();
+	  return;
+	}
 
     if (__appZoom.pointers.size === 1 && __appZoom.isPanning && __appZoom.scale > 1) {
       const dx = e.clientX - __appZoom.panStartX;
@@ -1476,6 +1515,7 @@ async function forzarActualizacion() {
   if (banner) banner.remove();
   window.location.reload();
 }
+
 
 
 
