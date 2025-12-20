@@ -1067,6 +1067,18 @@ header {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Evita rebotes/scroll chaining (Android) */
+#main-scroll {
+  overscroll-behavior: contain;
+}
+
+/* Cuando el visor está abierto, bloquea scroll del contenedor principal */
+.no-scroll {
+  overflow: hidden !important;
+}
+
+
+
 
 
 
