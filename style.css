@@ -901,16 +901,6 @@ body {
   border:2px solid white;
 }
 
-/* Quitar highlight azul en imágenes (no clicables) */
-.material-main-img,
-.material-extra-img {
-  cursor: default !important;
-  pointer-events: none;               /* no click, no overlay */
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
 html, body { height: 100%; }
 
 /* Layout para que el header nunca desaparezca */
@@ -944,6 +934,111 @@ header {
   transform-origin: 0 0;
   will-change: transform;
 }
+
+/* ---------------------------
+   IMÁGENES en detalle: miniaturas a ancho completo
+--------------------------- */
+.material-detail-container {
+  display: block;              /* en vez de flex */
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.material-main-img {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  display: block;
+  margin: 0 auto 12px auto;
+
+  /* que no salga el “flash azul” */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Botón invisible que envuelve miniaturas (sin efecto azul) */
+.img-thumb-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Imágenes extra en lista */
+.material-thumb-img {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  display: block;
+}
+
+/* Separación entre imágenes */
+.docs-images {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ---------------------------
+   VISOR OVERLAY de imagen
+--------------------------- */
+#img-viewer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 60px; /* deja visible el header (60px en tu CSS) */
+  bottom: 0;
+  z-index: 10050;
+  background: rgba(0,0,0,0.88);
+}
+
+#img-viewer .img-viewer-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 10052;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 18px;
+  font-weight: bold;
+  background: rgba(255,255,255,0.9);
+  color: #111;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#img-viewer .img-viewer-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;         /* el pan lo hacemos por translate */
+  touch-action: none;       /* IMPORTANTÍSIMO: evitamos scroll/gestos del navegador */
+}
+
+#img-viewer .img-viewer-layer {
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+#img-viewer img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 60px);
+  margin: 0 auto;
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+
 
 
 
