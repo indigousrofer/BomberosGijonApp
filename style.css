@@ -97,6 +97,8 @@ h1 {
     border-radius: 8px;
     transition: background-color 0.2s;
     font-size: 1.1em;
+	-webkit-tap-highlight-color: transparent; /* Elimina el recuadro gris/rojo al tocar */
+    user-select: none; /* Evita que se seleccione el texto al mantener pulsado */
 }
 
 .list-item:hover, .view-button:hover, .hotspot:hover {
@@ -218,6 +220,7 @@ h1 {
     margin-bottom: 12px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     transition: transform 0.2s, background-color 0.2s;
+	-webkit-tap-highlight-color: transparent;
     
     /* --- CAMBIO CLAVE: Disposición Horizontal --- */
     display: flex;         /* Activa Flexbox */
@@ -1099,6 +1102,7 @@ header {
   margin-top: calc(var(--header-base) + var(--safe-top));
   padding-bottom: var(--safe-bottom);
 }
+
 
 
 
