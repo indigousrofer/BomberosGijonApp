@@ -7,6 +7,8 @@ let __prevViewportContent = null;
 let mesActualCal = new Date().getMonth();
 let añoActualCal = new Date().getFullYear();
 let turnoSeleccionadoCal = 'T2';
+let __updateBannerShown = false;
+let __updatesInitDone = false;
 
 const appContent = document.getElementById('app-content');
 const backButton = document.getElementById('back-button');
@@ -75,12 +77,25 @@ async function loadFirebaseData() {
 }
 
 function showUpdateNotice() {
-    if (document.getElementById('update-banner')) return;
-    const aviso = document.createElement('div');
-    aviso.id = 'update-banner';
-    aviso.style = "position:fixed; top:70px; left:10px; right:10px; background:#AA1915; color:white; padding:15px; border-radius:8px; z-index:10005; text-align:center; font-weight:bold; border:2px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.3);";
-    aviso.innerHTML = `ACTUALIZACIÓN LISTA <button onclick="forzarActualizacion()" style="margin-left:10px; padding:5px 15px; border-radius:5px; border:none; background:white; color:#AA1915; font-weight:bold; cursor:pointer;">ACTUALIZAR</button>`;
-    document.body.appendChild(aviso);
+  if (__updateBannerShown) return;
+  if (document.getElementById('update-banner')) {
+    __updateBannerShown = true;
+    return;
+  }
+
+  __updateBannerShown = true;
+
+  const aviso = document.createElement('div');
+  aviso.id = 'update-banner';
+  aviso.innerHTML = `
+    <div style="position:fixed; bottom:15px; left:15px; right:15px; z-index:99999; background:#222; color:#fff; padding:12px 14px; border-radius:10px; display:flex; align-items:center; gap:12px;">
+      <span style="flex:1;">Nueva versión disponible</span>
+      <button onclick="forzarActualizacion()" style="background:#AA1915; color:#fff; border:0; padding:10px 14px; border-radius:8px; font-weight:bold; cursor:pointer;">
+        ACTUALIZAR
+      </button>
+    </div>
+  `;
+  document.body.appendChild(aviso);
 }
 
 function navigateToSection(id) {
@@ -1480,6 +1495,8 @@ document.addEventListener('DOMContentLoaded', () => {
 let swRegistration = null;
 
 async function initServiceWorkerUpdates() {
+  if (__updatesInitDone) return;
+  __updatesInitDone = true;
   if (!('serviceWorker' in navigator)) return;
 
   swRegistration = await navigator.serviceWorker.ready;
@@ -1502,6 +1519,7 @@ async function initServiceWorkerUpdates() {
 
   // Cuando el nuevo SW toma control, recargamos y quitamos banner
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+	__updateBannerShown = false;
     const banner = document.getElementById('update-banner');
     if (banner) banner.remove();
     window.location.reload();
@@ -1547,6 +1565,7 @@ async function forzarActualizacion() {
   if (banner) banner.remove();
   window.location.reload();
 }
+
 
 
 
