@@ -190,10 +190,6 @@ function render(contentHTML, title, state, isBack = false) {
   appContent.innerHTML = contentHTML;
   document.querySelector('header h1').textContent = title;
 
-  // Bloquea zoom de página SOLO en PDFs (si lo estás usando)
-  if (state && state.type === "pdf") lockPageZoom(true);
-  else lockPageZoom(false);
-
   if (!isBack) {
     navigationHistory.push(state);
 
@@ -1588,5 +1584,6 @@ function forzarActualizacion() {
   // 3) Si no hay nada → pedimos update (y el banner se queda hasta que aparezca waiting)
   swRegistration.update().catch(() => {});
 }
+
 
 
