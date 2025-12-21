@@ -9,6 +9,10 @@ body {
     padding: 0;
     background-color: #f0f0f0;
     color: #333;
+	display: flex;
+  	flex-direction: column;
+  	overflow: hidden; /* el scroll lo hace el main */
+	overflow-x: hidden;
 }
 
 header {
@@ -19,7 +23,7 @@ header {
     justify-content: space-between; /* Empuja los iconos a los bordes */
     align-items: center;
     height: 60px;
-    position: sticky;
+    position: fixed + env(safe-area-inset-top);
     top: 0;
     z-index: 1001;
 }
@@ -155,27 +159,6 @@ h1 {
     white-space: nowrap;
 }
 
-/* Estilos del Visor Modal */
-.modal {
-    display: none; 
-    position: fixed; 
-    z-index: 1000; 
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.9); /* Fondo negro opaco */
-    overflow: auto;
-}
-
-.modal-content {
-    margin: auto;
-    display: block;
-    max-width: 90%;
-    max-height: 80%;
-    margin-top: 50px;
-}
-
 .close-viewer {
     position: absolute;
     top: 20px;
@@ -184,30 +167,6 @@ h1 {
     font-size: 60px;
     font-weight: bold;
     cursor: pointer;
-}
-
-#modal-content img {
-    width: auto;           /* Permite que el ancho sea automático */
-    max-width: 95%;        /* Que no se salga de los lados */
-    height: auto;          /* Permite que el alto sea automático */
-    max-height: 85vh;      /* Que no se pase de la altura de la pantalla */
-    display: block;
-    margin: 50px auto;     /* Centra la imagen horizontalmente */
-    border: 3px solid white;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    
-    /* Esta es la clave: mantiene la proporción */
-    object-fit: contain; 
-}
-
-/* Si usas PDFs, el iframe sí suele necesitar medidas fijas */
-#modal-content iframe {
-    width: 90%;
-    height: 70vh; /* Un poco más bajo para que quepa el botón de cerrar arriba */
-    display: block;
-    margin: 40px auto;
-    background-color: black;
-    border: 2px solid #555;
 }
 
 /* Tarjetas de vehículos en el nivel 1 */
@@ -296,21 +255,6 @@ a {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* Estilo base de la fila */
-.inventory-row {
-    display: flex;
-    width: 100%;
-    align-items: stretch; /* Estira las columnas para que tengan la misma altura */
-    border-bottom: 1px solid #eee;
-    cursor: pointer;
-    transition: background 0.2s;
-    min-height: 50px; /* Asegura una altura mínima cómoda */
-}
-
-.inventory-row:nth-child(even) {
-    background-color: #f5dbdb; /* Color par */
-}
-
 /* CABECERA ROJA: Sobrescribe el color de la fila */
 .inventory-header {
     background-color: #AA1915 !important;
@@ -323,6 +267,11 @@ a {
 .kit-row {
     background-color: #ffeaa1 !important;
     font-weight: bold !important;
+    color: #000 !important;
+}
+
+/* Asegurar que el texto dentro del kit sea negro para legibilidad */
+.kit-row .col-qty, .kit-row .col-name {
     color: #000 !important;
 }
 
@@ -358,7 +307,7 @@ a {
 
 /* Contenedor de descripción e imagen del material */
 .material-detail-container {
-    display: flex;
+    display: block;
     gap: 20px;
     background: white;
     padding: 15px;
@@ -368,8 +317,9 @@ a {
 }
 
 .material-main-img {
-    width: 150px;           /* Ancho de la miniatura */
-    height: 150px;
+    width: 100%;           /* Ancho de la miniatura */
+    height: auto;
+	max-width: 100%;
     object-fit: cover;      /* Mantiene la proporción sin deformar */
     border-radius: 5px;
     cursor: pointer;        /* Indica que se puede ampliar */
@@ -435,16 +385,11 @@ a {
 /* Contenedor del mapa My Maps */
 #map {
     width: 100vw; /* Ancho total de la ventana */
-    #map { height: calc(100vh - var(--header-h));   /* Altura total menos el header */
+    height: calc(100vh - var(--header-h));   /* Altura total menos el header */
     margin-top: -20px;   /* Compensa el padding superior de #app-content */
     margin-left: -20px;  /* Compensa el padding izquierdo de #app-content */
     position: relative;
     z-index: 1;
-}
-
-/* Evitamos que aparezca una barra de scroll horizontal por los márgenes negativos */
-body {
-    overflow-x: hidden;
 }
 
 .leaflet-control-layers {
@@ -549,26 +494,16 @@ body {
 }
 
 /* style.css */
-.tabla-calendario td {
-    width: 14.28%;     /* 7 días */
-    height: 50px;      /* Altura fija para el cuadrado */
-    text-align: center;
-    border: 1px solid #f0f0f0;
-    font-size: 1.1em;
-    padding: 0 !important;   /* Forzamos que no haya espacio interno */
-    vertical-align: middle;
-    border-radius: 0 !important; /* Forzamos que sea cuadrado, eliminando el círculo */
-}
-
-.tabla-calendario td {
-    box-sizing: border-box; /* Asegura que el borde de 3px crezca hacia adentro */
-    width: 14.28%;
-    height: 50px;
-    text-align: center;
-    border: 1px solid #f0f0f0;
-    font-size: 1.1em;
-    padding: 0 !important;
-    vertical-align: middle;
+.tabla-calendario td{
+  box-sizing:border-box;
+  width:14.28%;
+  height:50px;
+  text-align:center;
+  border:1px solid #f0f0f0;
+  font-size:1.1em;
+  padding:0 !important;
+  vertical-align:middle;
+  border-radius:0 !important;
 }
 
 /* Para que el número se vea bien centrado en el cuadrado de color */
@@ -676,18 +611,20 @@ body {
 /* --- Sombreado Alterno para Filas de Inventario --- */
 
 /* 1. Fondo principal para todas las filas (impares) */
-.inventory-row {
-    background-color: #fdf4f4; /* Blanco claro */
-    display: flex;
-    border-bottom: 1px solid #eee;
-    cursor: pointer;
-    transition: background 0.2s;
+.inventory-row{
+  display:flex;
+  width:100%;
+  align-items:stretch;
+  min-height:50px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+  transition:background 0.2s;
+  background-color:#fdf4f4;
+}
+.inventory-row:nth-child(even){
+  background-color:#f5dbdb;
 }
 
-/* 2. Fondo para las filas pares (un poco más oscuro) */
-.inventory-row:nth-child(even) {
-    background-color: #f5dbdb; 
-}
 
 /* style.css */
 .kit-indicator {
@@ -859,25 +796,7 @@ body {
     margin: 0 auto;
 }
 
-/* --- MODIFICACIÓN 2: Definir el Header Rojo y el Kit Amarillo --- */
 
-/* Regla para todas las cabeceras de tabla */
-.inventory-header {
-    background-color: #AA1915 !important;
-    color: white !important;
-    font-weight: bold;
-}
-
-/* Regla para resaltar los Kits en las tablas de armarios */
-.kit-row {
-    background-color: #ffeaa1 !important; /* Amarillo suave */
-    font-weight: bold !important;
-}
-
-/* Asegurar que el texto dentro del kit sea negro para legibilidad */
-.kit-row .col-qty, .kit-row .col-name {
-    color: #000 !important;
-}
 
 .pdf-basic{
   position: relative;
@@ -912,13 +831,6 @@ body {
 }
 
 html, body { height: 100%; }
-
-/* Layout para que el header nunca desaparezca */
-body {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden; /* el scroll lo hace el main */
-}
 
 /* Header siempre visible */
 header {
@@ -1116,4 +1028,14 @@ header{
   margin-top: calc(var(--header-base) + var(--safe-top));
   padding-bottom: var(--safe-bottom);
 }
+
+.vehicle-card, .list-item, .dashboard-item, a, button {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+	
+
+
+
 
