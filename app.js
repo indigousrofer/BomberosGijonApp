@@ -105,9 +105,8 @@ function navigateToSection(id) {
     if (id === 'calendario') renderCalendarioSection(); // ID de data.js
 }
 
-function isIOS() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 }
 
 function isStandalonePWA() {
@@ -188,33 +187,38 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
 
 // --- FUNCIÓN RENDER ---
 function render(contentHTML, title, state, isBack = false) {
-	resetAppZoom();
-  	if (mainScroll) { mainScroll.scrollTop = 0; mainScroll.scrollLeft = 0; }
-	
-    appContent.innerHTML = contentHTML;
-    document.querySelector('header h1').textContent = title;
+  appContent.innerHTML = contentHTML;
+  document.querySelector('header h1').textContent = title;
 
-    // Solo añadimos al historial si vamos HACIA ADELANTE
-    if (!isBack) {
-        navigationHistory.push(state);
-        // Sincronizamos con el navegador
-        history.pushState({ stateIndex: navigationHistory.length - 1 }, title);
-    }
+  // Bloquea zoom de página SOLO en PDFs (si lo estás usando)
+  if (state && state.type === "pdf") lockPageZoom(true);
+  else lockPageZoom(false);
 
-    const actionIcon = document.getElementById('header-action-icon');
-    const logoImg = document.getElementById('header-logo-img');
-    const backButton = document.getElementById('back-button');
+  if (!isBack) {
+    navigationHistory.push(state);
 
-    // Control visual del botón
-    if (state.level === 0) {
-        logoImg.src = "images/favicon.png";
-        actionIcon.classList.remove('header-logo-active');
-        backButton.style.display = 'none';
+    const idx = navigationHistory.length - 1;
+
+    // IMPORTANTÍSIMO: la primera pantalla debe ser replaceState
+    if (idx === 0) {
+      history.replaceState({ stateIndex: 0 }, title);
     } else {
-        logoImg.src = "images/home-icon.png";
-        actionIcon.classList.add('header-logo-active');
-        backButton.style.display = 'inline';
+      history.pushState({ stateIndex: idx }, title);
     }
+  }
+
+  const actionIcon = document.getElementById('header-action-icon');
+  const logoImg = document.getElementById('header-logo-img');
+
+  if (state.level === 0) {
+    logoImg.src = "images/favicon.png";
+    actionIcon.classList.remove('header-logo-active');
+    backButton.style.display = 'none';
+  } else {
+    logoImg.src = "images/home-icon.png";
+    actionIcon.classList.add('header-logo-active');
+    backButton.style.display = 'inline';
+  }
 }
 
 // ---------------------------------------------------- //
@@ -1124,20 +1128,28 @@ function renderResource(materialId, url, type, resourceName, isBack = false) {
     const material = FIREBASE_DATA.MATERIALS[materialId];
     const docEntry = (material?.docs || []).find(d => d.url === url);
 
-    // Tu URL de descarga viene en doc.url_download
-    let downloadUrl = docEntry?.url_download ? driveToDirectDownload(docEntry.url_download) : url;
+    const isIOS = isIOSDevice();
+
+    // iOS: abrir la URL "view/preview" (la que tú guardas como url_download)
+    // Android: mantener descarga directa
+    let downloadUrl = url;
+    if (docEntry?.url_download) {
+      downloadUrl = isIOS
+        ? docEntry.url_download
+        : driveToDirectDownload(docEntry.url_download);
+    }
+
+    const extraAttrs = isIOS
+      ? '' // sin target blank, sin download
+      : ' target="_blank" rel="noopener noreferrer" download';
 
     const contentPdf = `
       <div class="pdf-basic">
         <a class="pdf-download"
-           href="${downloadUrl}"
-           target="_blank"
-           rel="noopener noreferrer"
-           download>
+           href="${downloadUrl}"${extraAttrs}>
           Descargar
         </a>
 
-        <!-- visor básico dentro de la app -->
         <iframe class="pdf-frame"
                 src="${url}"
                 title="${resourceName}"
@@ -1415,34 +1427,44 @@ function obtenerNombreMes(n) { return ["Enero", "Febrero", "Marzo", "Abril", "Ma
 // ----------------------------------------------------
 // SISTEMA DE NAVEGACIÓN (ÚNICO)
 // ----------------------------------------------------
-function handleBackNavigation() {
-    if (navigationHistory.length > 1) {
-        navigationHistory.pop(); 
-        const target = navigationHistory[navigationHistory.length - 1];
-        if (mainScroll) { mainScroll.scrollTop = 0; mainScroll.scrollLeft = 0; }
-        
-        if (target.level === 0) renderDashboard(true);
-        else if (target.level === 1) {
-            if (target.section === 'material_global') renderGlobalMaterialList(true);
-            else if (target.section === 'mapa') renderMapaSection(true);
-            else if (target.section === 'calendario') renderCalendarioSection(true);
-            else renderVehiclesList(true);
-        }
-        else if (target.level === 2) showVehicleViews(target.vehicleId, true);
-        else if (target.level === 3) showViewHotspots(target.vehicleId, target.viewId, true);
-        else if (target.level === 4) showArmarioMaterial(target.vehicleId, target.viewId, target.hotspotIndex, true);
-        else if (target.level === 4.5) showKitInventory(target.kitId, target.parentName, true);
-        else if (target.level === 5) {
-            if (target.section === 'material_global') showGlobalMaterialDetail(target.materialId, true);
-            else showMaterialDetails(target.materialId, true);
-        }
-        else if (target.level === 6) renderResource(target.materialId, target.url, target.type, target.resourceName, true);
+function handleBackNavigation(event) {
+  const idx = event?.state?.stateIndex;
+
+  // Si el navegador nos da un stateIndex válido, sincronizamos ahí
+  if (typeof idx === "number" && idx >= 0 && idx < navigationHistory.length) {
+    navigationHistory = navigationHistory.slice(0, idx + 1);
+    const target = navigationHistory[navigationHistory.length - 1];
+    window.scrollTo(0, 0);
+
+    if (target.level === 0) renderDashboard(true);
+    else if (target.level === 1) {
+      if (target.section === 'material_global') renderGlobalMaterialList(true);
+      else if (target.section === 'mapa') renderMapaSection(true);
+      else if (target.section === 'calendario') renderCalendarioSection(true);
+      else renderVehiclesList(true);
     }
+    else if (target.level === 2) showVehicleViews(target.vehicleId, true);
+    else if (target.level === 3) showViewHotspots(target.vehicleId, target.viewId, true);
+    else if (target.level === 4) showArmarioMaterial(target.vehicleId, target.viewId, target.hotspotIndex, true);
+    else if (target.level === 4.5) showKitInventory(target.kitId, target.parentName, true);
+    else if (target.level === 5) {
+      if (target.section === 'material_global') showGlobalMaterialDetail(target.materialId, true);
+      else showMaterialDetails(target.materialId, true);
+    }
+    else if (target.level === 6) renderResource(target.materialId, target.url, target.type, target.resourceName, true);
+
+    return;
+  }
+
+  // Si iOS dispara popstate sin state (pasa), forzamos Home estable
+  navigationHistory = [{ level: 0 }];
+  renderDashboard(true);
+  history.replaceState({ stateIndex: 0 }, 'Bomberos Gijón');
 }
 
 // Eventos
 backButton.addEventListener('click', (e) => { e.preventDefault(); history.back(); });
-window.onpopstate = handleBackNavigation;
+window.addEventListener('popstate', handleBackNavigation);
 
 function goToHome() {
     if (navigationHistory.length > 0 && navigationHistory[navigationHistory.length - 1].level === 0) return;
@@ -1531,37 +1553,40 @@ document.addEventListener('DOMContentLoaded', () => {
   initServiceWorkerUpdates().catch(console.error);
 });
 
-async function forzarActualizacion() {
+function forzarActualizacion() {
   const banner = document.getElementById('update-banner');
   const btn = banner?.querySelector('button');
-
   if (btn) {
     btn.disabled = true;
-    btn.textContent = 'Actualizando…';
+    btn.textContent = 'ACTUALIZANDO…';
   }
 
-  try {
-    const reg = await navigator.serviceWorker.getRegistration();
-    const waiting = reg?.waiting || swRegistration?.waiting;
+  if (!swRegistration) {
+    window.location.reload();
+    return;
+  }
 
-    if (waiting) {
-      // Pedimos al SW nuevo que se active YA
-      waiting.postMessage({ type: 'SKIP_WAITING' });
-
-      // Importante: quitamos el banner ya para que no se quede “pegado”
-      if (banner) banner.remove();
-
-      // Fallback: aunque controllerchange no dispare, recargamos
-      setTimeout(() => window.location.reload(), 800);
-      return;
+  const activateWaiting = () => {
+    if (swRegistration.waiting) {
+      swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      return true;
     }
+    return false;
+  };
 
-    // Si por lo que sea no hay waiting, forzamos búsqueda y recargamos
-    await (reg || swRegistration)?.update?.();
-  } catch (e) {
-    // da igual: recargamos abajo
+  // 1) Si ya está esperando → activar ya
+  if (activateWaiting()) return;
+
+  // 2) Si está instalando → esperamos a que pase a waiting
+  if (swRegistration.installing) {
+    swRegistration.installing.addEventListener('statechange', () => {
+      if (activateWaiting()) return;
+    });
+    return;
   }
 
-  if (banner) banner.remove();
-  window.location.reload();
+  // 3) Si no hay nada → pedimos update (y el banner se queda hasta que aparezca waiting)
+  swRegistration.update().catch(() => {});
 }
+
+
