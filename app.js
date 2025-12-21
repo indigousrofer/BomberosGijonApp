@@ -1062,18 +1062,29 @@ function showMaterialDetails(materialId, isBack = false) {
 
   // PDFs: lista + botón descargar a la derecha
   const pdfHTML = pdfs.length ? pdfs.map(doc => {
-    const downloadUrl = doc.url_download ? driveToDirectDownload(doc.url_download) : doc.url;
-    return `
-      <div class="doc-row">
-        <div class="doc-name">${doc.name}</div>
-        <a class="doc-download-btn"
-           href="${downloadUrl}"
-           target="_blank"
-           rel="noopener noreferrer"
-           download>Descargar</a>
-      </div>
-    `;
-  }).join('') : `<p class="muted">No hay documentos PDF.</p>`;
+	  const isIOSPWA = isIOSDevice() && isStandalonePWA();
+	
+	  // iOS PWA: NO convertir a descarga directa. Abrir el link “view/preview” (url_download)
+	  // Android/PC: sí convertir a descarga directa (tu comportamiento actual)
+	  const downloadUrl = doc.url_download
+	    ? (isIOSPWA ? doc.url_download : driveToDirectDownload(doc.url_download))
+	    : doc.url;
+	
+	  // iOS: sin target blank y sin download (son los que provocan el blanco)
+	  const attrs = isIOSPWA
+	    ? `rel="noopener noreferrer"`
+	    : `target="_blank" rel="noopener noreferrer" download`;
+	
+	  return `
+	    <div class="doc-row">
+	      <div class="doc-name">${doc.name}</div>
+	      <a class="doc-download-btn"
+	         href="${downloadUrl}" ${attrs}>
+	         Descargar
+	      </a>
+	    </div>
+	  `;
+	}).join('') : `<p class="muted">No hay documentos PDF.</p>`;
 
   // Imágenes: miniaturas a ancho completo, clic abre visor
   const photosHTML = photos.length ? photos.map(doc => `
@@ -1598,6 +1609,7 @@ function forzarActualizacion() {
   // 3) Si no hay nada → pedimos update (y el banner se queda hasta que aparezca waiting)
   swRegistration.update().catch(() => {});
 }
+
 
 
 
