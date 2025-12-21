@@ -769,7 +769,7 @@ function buildMaterialResourcesHTML(materialId, material) {
       return `
         <div class="doc-row">
           <div class="doc-name">${d.name}</div>
-          <a class="doc-download-btn" href="${downloadUrl}" ${extraAttrs}>Descargar</a>
+          <a class="doc-download-btn" href="${downloadUrl}" ${extraAttrs}>Descargar pdf</a>
         </div>
       `;
     }).join('')
@@ -1080,7 +1080,7 @@ function showMaterialDetails(materialId, isBack = false) {
 	      <div class="doc-name">${doc.name}</div>
 	      <a class="doc-download-btn"
 	         href="${downloadUrl}" ${attrs}>
-	         Descargar
+	         Descargar pdf
 	      </a>
 	    </div>
 	  `;
@@ -1609,6 +1609,7 @@ function forzarActualizacion() {
   // 3) Si no hay nada → pedimos update (y el banner se queda hasta que aparezca waiting)
   swRegistration.update().catch(() => {});
 }
+
 
 
 
