@@ -227,8 +227,8 @@ h1 {
 }
 
 .vehicle-card:active {
-    transform: scale(0.98);
-    background-color: #f9f9f9;
+    transform: none;
+    background-color: white;
 }
 
 .vehicle-thumb {
@@ -254,6 +254,16 @@ h1 {
     margin: 5px 0 0 0;
     font-size: 0.9em;
     color: #555;
+}
+
+.vehicle-card,
+.dashboard-item,
+.list-item,
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 /* Opcional: Para que se vea bien en tabletas, podemos usar una cuadrícula */
@@ -425,7 +435,7 @@ h1 {
 /* Contenedor del mapa My Maps */
 #map {
     width: 100vw; /* Ancho total de la ventana */
-    height: calc(100vh - 70px); /* Altura total menos el header */
+    #map { height: calc(100vh - var(--header-h));   /* Altura total menos el header */
     margin-top: -20px;   /* Compensa el padding superior de #app-content */
     margin-left: -20px;  /* Compensa el padding izquierdo de #app-content */
     position: relative;
@@ -1082,16 +1092,23 @@ body.zoom-active #main-scroll {
   touch-action: none;              /* clave para que el navegador no "secuestre" el gesto */
 }
 
-:root {
+:root{
   --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --header-base: 60px; /* tu header “normal” */
+  --header-h: calc(60px + var(--safe-top));
 }
 
-/* Header siempre visible y clicable */
-header {
+body{
+  padding-top: var(--header-h);
+}
+
+header{
+  position: fixed;      /* en vez de sticky */
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-h);
   padding-top: var(--safe-top);
-  height: calc(var(--header-base) + var(--safe-top));
+  z-index: 1001;
 }
 
 /* Si tu main usa margin-top por el header, ajusta también */
@@ -1099,3 +1116,4 @@ header {
   margin-top: calc(var(--header-base) + var(--safe-top));
   padding-bottom: var(--safe-bottom);
 }
+
