@@ -9,6 +9,8 @@ let añoActualCal = new Date().getFullYear();
 let turnoSeleccionadoCal = 'T2';
 let __updateBannerShown = false;
 let __updatesInitDone = false;
+let __prevBodyOverflow = '';
+let __prevMainOverflow = '';
 
 const appContent = document.getElementById('app-content');
 const backButton = document.getElementById('back-button');
@@ -23,26 +25,23 @@ const __appZoom = {
 
   pointers: new Map(),
 
-  // pinch
   pinchStartDist: 1,
   pinchStartScale: 1,
   pinchRefPx: 0,
   pinchRefPy: 0,
 
-  // pan
   isPanning: false,
   panStartX: 0,
   panStartY: 0,
   startX: 0,
   startY: 0,
 
-  // correción punto central zoom fuera de imágenes
+  // corrección del zoom con scroll
   normalizedScroll: false,
   lastScrollLeft: 0,
   lastScrollTop: 0,
   baseScrollLeft: 0,
-  baseScrollTop: 0,
-  normalizedScroll: false
+  baseScrollTop: 0
 };
 
 
@@ -58,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 3. CARGA DE DATOS Y ACTUALIZACIÓN
 async function initializeApp() {
-    render(`<div style="text-align:center; padding-top: 50px;"><p>Sincronizando Gijón...</p><div class="loader"></div></div>`, 'Cargando...', { level: -1 }, false);
+    render(`<div style="text-align:center; padding-top: 50px;"><p>Sincronizando Gijón...</p><div class="loader"></div></div>`, 'Cargando...', { level: -1 }, true);
     await loadFirebaseData();
     renderDashboard();
 }
@@ -187,15 +186,29 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
 
 // --- FUNCIÓN RENDER ---
 function render(contentHTML, title, state, isBack = false) {
+  // ✅ 1) SIEMPRE: resetear zoom y posición antes de dibujar una nueva pantalla
+  if (typeof resetAppZoom === "function") {
+    // Evita que te “herede” el zoom de la pantalla anterior
+    resetAppZoom();
+  }
+  if (mainScroll) {
+    mainScroll.scrollTop = 0;
+    mainScroll.scrollLeft = 0;
+  }
+  if (zoomLayer) {
+    // Por si quedara algún transform colgado por cualquier razón
+    zoomLayer.style.transform = "translate(0px, 0px) scale(1)";
+  }
+
+  // ✅ 2) Pintar contenido
   appContent.innerHTML = contentHTML;
   document.querySelector('header h1').textContent = title;
 
+  // ✅ 3) Historial
   if (!isBack) {
     navigationHistory.push(state);
-
     const idx = navigationHistory.length - 1;
 
-    // IMPORTANTÍSIMO: la primera pantalla debe ser replaceState
     if (idx === 0) {
       history.replaceState({ stateIndex: 0 }, title);
     } else {
@@ -203,6 +216,7 @@ function render(contentHTML, title, state, isBack = false) {
     }
   }
 
+  // ✅ 4) Header
   const actionIcon = document.getElementById('header-action-icon');
   const logoImg = document.getElementById('header-logo-img');
 
@@ -741,25 +755,25 @@ function buildMaterialResourcesHTML(materialId, material) {
   if (!pdfs.length && !photos.length && !videos.length) return '';
 
   const pdfRows = pdfs.length
-    ? pdfs.map(d => {
-        const isIOSPWA = isIOS() && isStandalonePWA();
-		const downloadUrl = isIOSPWA
-		  ? doc.url                         // ✅ iOS PWA: usa el PDF local
-		  : driveToDirectDownload(doc.url_download || doc.url); // ✅ resto: Drive directo
-		const downloadAttr = isIOSPWA ? '' : 'download';
-		
-        return `
-          <div class="doc-row">
-            <div class="doc-name">${d.name}</div>
-            <a class="doc-download-btn"
-			   href="${downloadUrl}"
-			   target="_blank"
-			   rel="noopener noreferrer"
-			   ${downloadAttr}>Descargar</a>
-          </div>
-        `;
-      }).join('')
-    : `<p class="muted">No hay documentos PDF.</p>`;
+  ? pdfs.map(d => {
+      const isIOSPWA = isIOSDevice() && isStandalonePWA();
+
+      // En iOS PWA: usa PDF local si existe (d.url), si no usa el link de Drive "view"
+      const downloadUrl = isIOSPWA
+        ? (d.url || d.url_download || '')
+        : driveToDirectDownload(d.url_download || d.url);
+
+      // En iOS PWA NO usamos download/target blank
+      const extraAttrs = isIOSPWA ? '' : 'target="_blank" rel="noopener noreferrer" download';
+
+      return `
+        <div class="doc-row">
+          <div class="doc-name">${d.name}</div>
+          <a class="doc-download-btn" href="${downloadUrl}" ${extraAttrs}>Descargar</a>
+        </div>
+      `;
+    }).join('')
+  : `<p class="muted">No hay documentos PDF.</p>`;
 
   const imgRows = photos.length
     ? photos.map(d => `
@@ -1584,6 +1598,7 @@ function forzarActualizacion() {
   // 3) Si no hay nada → pedimos update (y el banner se queda hasta que aparezca waiting)
   swRegistration.update().catch(() => {});
 }
+
 
 
 
