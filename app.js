@@ -188,19 +188,17 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
 
 // --- FUNCIÓN RENDER ---
 function render(contentHTML, title, state, isBack = false) {
-    resetAppZoom();
-    if (mainScroll) { mainScroll.scrollTop = 0; mainScroll.scrollLeft = 0; }
-    
+	resetAppZoom();
+  	if (mainScroll) { mainScroll.scrollTop = 0; mainScroll.scrollLeft = 0; }
+	
     appContent.innerHTML = contentHTML;
     document.querySelector('header h1').textContent = title;
 
+    // Solo añadimos al historial si vamos HACIA ADELANTE
     if (!isBack) {
-        // Evitar duplicar el mismo nivel en el historial (pasa mucho al refrescar)
-        const lastState = navigationHistory[navigationHistory.length - 1];
-        if (!lastState || JSON.stringify(lastState) !== JSON.stringify(state)) {
-            navigationHistory.push(state);
-            history.pushState({ stateIndex: navigationHistory.length - 1 }, title);
-        }
+        navigationHistory.push(state);
+        // Sincronizamos con el navegador
+        history.pushState({ stateIndex: navigationHistory.length - 1 }, title);
     }
 
     const actionIcon = document.getElementById('header-action-icon');
@@ -297,11 +295,6 @@ function initAppZoom() {
 
   // IMPORTANTE: passive:false para poder usar preventDefault()
   mainScroll.addEventListener('pointerdown', (e) => {
-	if (e.pointerType === 'touch' && __appZoom.pointers.size === 0) {
-        // Forzamos una actualización de coordenadas inmediata para evitar el "lag" inicial de iOS
-        __appZoom.panStartX = e.clientX;
-        __appZoom.panStartY = e.clientY;
-    }
     mainScroll.setPointerCapture?.(e.pointerId);
     __appZoom.pointers.set(e.pointerId, e);
 
@@ -747,25 +740,26 @@ function buildMaterialResourcesHTML(materialId, material) {
 
   if (!pdfs.length && !photos.length && !videos.length) return '';
 
-  // app.js - Modifica la lógica dentro de showMaterialDetails o buildMaterialResourcesHTML
-	const pdfRows = pdfs.length ? pdfs.map(d => {
-		// Detectamos si es iOS para cambiar el comportamiento
-		const isIOSDevice = isIOS();
+  const pdfRows = pdfs.length
+    ? pdfs.map(d => {
+        const isIOSPWA = isIOS() && isStandalonePWA();
+		const downloadUrl = isIOSPWA
+		  ? doc.url                         // ✅ iOS PWA: usa el PDF local
+		  : driveToDirectDownload(doc.url_download || doc.url); // ✅ resto: Drive directo
+		const downloadAttr = isIOSPWA ? '' : 'download';
 		
-		// Si es iOS, preferimos abrir el PDF local (doc.url) que suele ser 'material/xxx.pdf'
-		// Si es Android, usamos el transformador de Drive para forzar descarga
-		const finalUrl = isIOSDevice ? d.url : driveToDirectDownload(d.url_download || d.url);
-	
-		return `
-		  <div class="doc-row">
-			<div class="doc-name">${d.name}</div>
-			<a class="doc-download-btn"
-			   href="${finalUrl}"
+        return `
+          <div class="doc-row">
+            <div class="doc-name">${d.name}</div>
+            <a class="doc-download-btn"
+			   href="${downloadUrl}"
 			   target="_blank"
-			   rel="noopener noreferrer">Ver / Descargar</a>
-		  </div>
-		`;
-	}).join('') : `...`;
+			   rel="noopener noreferrer"
+			   ${downloadAttr}>Descargar</a>
+          </div>
+        `;
+      }).join('')
+    : `<p class="muted">No hay documentos PDF.</p>`;
 
   const imgRows = photos.length
     ? photos.map(d => `
@@ -1053,24 +1047,19 @@ function showMaterialDetails(materialId, isBack = false) {
     : '';
 
   // PDFs: lista + botón descargar a la derecha
-  const pdfRows = pdfs.length ? pdfs.map(d => {
-	    // Detectamos si es iOS para cambiar el comportamiento
-	    const isIOSDevice = isIOS();
-	    
-	    // Si es iOS, preferimos abrir el PDF local (doc.url) que suele ser 'material/xxx.pdf'
-	    // Si es Android, usamos el transformador de Drive para forzar descarga
-	    const finalUrl = isIOSDevice ? d.url : driveToDirectDownload(d.url_download || d.url);
-	
-	    return `
-	      <div class="doc-row">
-	        <div class="doc-name">${d.name}</div>
-	        <a class="doc-download-btn"
-	           href="${finalUrl}"
-	           target="_blank"
-	           rel="noopener noreferrer">Ver / Descargar</a>
-	      </div>
-	    `;
-	}).join('') : `<p class="muted">No hay documentos PDF.</p>`;
+  const pdfHTML = pdfs.length ? pdfs.map(doc => {
+    const downloadUrl = doc.url_download ? driveToDirectDownload(doc.url_download) : doc.url;
+    return `
+      <div class="doc-row">
+        <div class="doc-name">${doc.name}</div>
+        <a class="doc-download-btn"
+           href="${downloadUrl}"
+           target="_blank"
+           rel="noopener noreferrer"
+           download>Descargar</a>
+      </div>
+    `;
+  }).join('') : `<p class="muted">No hay documentos PDF.</p>`;
 
   // Imágenes: miniaturas a ancho completo, clic abre visor
   const photosHTML = photos.length ? photos.map(doc => `
@@ -1576,88 +1565,3 @@ async function forzarActualizacion() {
   if (banner) banner.remove();
   window.location.reload();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
