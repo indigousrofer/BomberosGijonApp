@@ -112,6 +112,24 @@ function isStandalonePWA() {
   return window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
 }
 
+function getPdfDownloadHrefAndAttrs(doc) {
+  const isIOSPWA = isIOSDevice() && isStandalonePWA();
+
+  // Igual que en showMaterialDetails():
+  // iOS PWA -> abrir enlace "view/preview" (url_download) sin descarga directa
+  // resto -> descarga directa si hay url_download
+  const href = doc.url_download
+    ? (isIOSPWA ? doc.url_download : driveToDirectDownload(doc.url_download))
+    : doc.url;
+
+  // Igual que en showMaterialDetails():
+  const attrs = isIOSPWA
+    ? `rel="noopener noreferrer"`
+    : `target="_blank" rel="noopener noreferrer" download`;
+
+  return { href, attrs };
+}
+
 // --- FUNCIÓN RENDER del mapa ---
 // --- NIVEL 1: SECCIÓN DE MAPA (ACTUALIZADA) ---
 async function renderMapaSection(isBack = false) { // <--- Añadir isBack
@@ -704,6 +722,17 @@ function showKitInventory(kitId, parentName, isBack = false) {
         return;
     }
 
+	const kitDocs = (kit.docs || []).filter(d => d.url && d.name);
+	const kitPhoto = kitDocs.find(d => d.type === 'photo');
+	const kitPhotoHTML = kitPhoto ? `
+	  <div style="margin-bottom:12px;">
+	    <button class="img-thumb-btn"
+	            onclick='openImageViewer(${JSON.stringify(kitPhoto.url)}, ${JSON.stringify(kitPhoto.name || kit.name)})'>
+	      <img src="${kitPhoto.url}" alt="${kitPhoto.name || kit.name}" class="material-main-img" draggable="false">
+	    </button>
+	  </div>
+	` : '';
+
     const headerHTML = `
         <div class="inventory-row inventory-header"> 
             <div class="col-qty">nº</div>
@@ -728,11 +757,12 @@ function showKitInventory(kitId, parentName, isBack = false) {
 	}).join('');
 
     const contentHTML = `
-        <div class="inventory-table">
-            ${headerHTML}
-            ${rowsHTML}
-        </div>
-    `;
+	  ${kitPhotoHTML}
+	  <div class="inventory-table">
+	    ${headerHTML}
+	    ${rowsHTML}
+	  </div>
+	`;
 
     // Renderizamos la lista con un nivel de 4.5 para el historial
     render(contentHTML, kit.name, { level: 4.5, kitId, parentName }, isBack);
@@ -756,20 +786,11 @@ function buildMaterialResourcesHTML(materialId, material) {
 
   const pdfRows = pdfs.length
   ? pdfs.map(d => {
-      const isIOSPWA = isIOSDevice() && isStandalonePWA();
-
-      // En iOS PWA: usa PDF local si existe (d.url), si no usa el link de Drive "view"
-      const downloadUrl = isIOSPWA
-        ? (d.url || d.url_download || '')
-        : driveToDirectDownload(d.url_download || d.url);
-
-      // En iOS PWA NO usamos download/target blank
-      const extraAttrs = isIOSPWA ? '' : 'target="_blank" rel="noopener noreferrer" download';
-
+      const { href, attrs } = getPdfDownloadHrefAndAttrs(d);
       return `
         <div class="doc-row">
           <div class="doc-name">${d.name}</div>
-          <a class="doc-download-btn" href="${downloadUrl}" ${extraAttrs}>Descargar pdf</a>
+          <a class="doc-download-btn" href="${href}" ${attrs}>Descargar pdf</a>
         </div>
       `;
     }).join('')
@@ -1062,29 +1083,14 @@ function showMaterialDetails(materialId, isBack = false) {
 
   // PDFs: lista + botón descargar a la derecha
   const pdfHTML = pdfs.length ? pdfs.map(doc => {
-	  const isIOSPWA = isIOSDevice() && isStandalonePWA();
-	
-	  // iOS PWA: NO convertir a descarga directa. Abrir el link “view/preview” (url_download)
-	  // Android/PC: sí convertir a descarga directa (tu comportamiento actual)
-	  const downloadUrl = doc.url_download
-	    ? (isIOSPWA ? doc.url_download : driveToDirectDownload(doc.url_download))
-	    : doc.url;
-	
-	  // iOS: sin target blank y sin download (son los que provocan el blanco)
-	  const attrs = isIOSPWA
-	    ? `rel="noopener noreferrer"`
-	    : `target="_blank" rel="noopener noreferrer" download`;
-	
-	  return `
-	    <div class="doc-row">
-	      <div class="doc-name">${doc.name}</div>
-	      <a class="doc-download-btn"
-	         href="${downloadUrl}" ${attrs}>
-	         Descargar pdf
-	      </a>
-	    </div>
-	  `;
-	}).join('') : `<p class="muted">No hay documentos PDF.</p>`;
+  const { href, attrs } = getPdfDownloadHrefAndAttrs(doc);
+  return `
+    <div class="doc-row">
+      <div class="doc-name">${doc.name}</div>
+      <a class="doc-download-btn" href="${href}" ${attrs}>Descargar pdf</a>
+    </div>
+  `;
+}).join('') : `<p class="muted">No hay documentos PDF.</p>`;
 
   // Imágenes: miniaturas a ancho completo, clic abre visor
   const photosHTML = photos.length ? photos.map(doc => `
@@ -1609,6 +1615,7 @@ function forzarActualizacion() {
   // 3) Si no hay nada → pedimos update (y el banner se queda hasta que aparezca waiting)
   swRegistration.update().catch(() => {});
 }
+
 
 
 
