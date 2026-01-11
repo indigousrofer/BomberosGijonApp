@@ -559,6 +559,9 @@ function showViewHotspots(vehicleId, viewId, isBack = false) {
              }
         }
 
+		// AQUÍ DEJO EL NOMBRE DE CADA HOTSPOT VACÍO DE MOMENTO. SI BORRO ESTA LÍNEA VUELVE A USARSE LA LÓGICA DE ARRIBA
+		shortName = "";
+
         // 2. DEFINIR LA POSICIÓN Y RENDERIZAR (Mantenemos el estilo sin callout)
         const hotspotArea = h.style;
 
@@ -1615,6 +1618,7 @@ function forzarActualizacion() {
   // 3) Si no hay nada → pedimos update (y el banner se queda hasta que aparezca waiting)
   swRegistration.update().catch(() => {});
 }
+
 
 
 
