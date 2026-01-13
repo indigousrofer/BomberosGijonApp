@@ -5,7 +5,7 @@
    ========================================================= */
 
 // 1) Sube este número SOLO cuando publiques una versión nueva
-const CACHE_NAME = 'bomberos-v60';
+const CACHE_NAME = 'bomberos-v61';
 
 // 2) Solo los “core assets” imprescindibles (app shell)
 // OJO: si tu app vive bajo /BomberosGijonApp/ usa rutas coherentes con eso.
@@ -64,21 +64,21 @@ self.addEventListener('fetch', (event) => {
 
   // Navegación (index.html) → cache-first con fallback a network
   if (req.mode === 'navigate') {
-     const url = new URL(req.url);
-     const last = url.pathname.split('/').pop() || '';
-     const hasExt = /\.[a-zA-Z0-9]+$/.test(last);
-   
-     // Si es un archivo real (.pdf, .jpg, etc), dejamos pasar la navegación normal
-     if (hasExt && !last.endsWith('.html')) {
-       event.respondWith(fetch(req));
-       return;
-     }
-   
-     event.respondWith(
-       caches.match('./index.html').then((cached) => cached || fetch('./index.html'))
-     );
-     return;
-   }
+    const url = new URL(req.url);
+    const last = url.pathname.split('/').pop() || '';
+    const hasExt = /\.[a-zA-Z0-9]+$/.test(last);
+
+    // Si es un archivo real (.pdf, .jpg, etc), dejamos pasar la navegación normal
+    if (hasExt && !last.endsWith('.html')) {
+      event.respondWith(fetch(req));
+      return;
+    }
+
+    event.respondWith(
+      caches.match('./index.html').then((cached) => cached || fetch('./index.html'))
+    );
+    return;
+  }
 
   // Resto → cache-first
   event.respondWith(
@@ -86,9 +86,13 @@ self.addEventListener('fetch', (event) => {
       if (cached) return cached;
       return fetch(req)
         .then((res) => {
-          // Cachea solo respuestas válidas
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
+          // Cachea solo respuestas válidas (status 200)
+          // Así evitamos guardar 404 u otros errores
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => { });
+          }
+
           return res;
         })
         .catch(() => cached); // fallback “best effort”
