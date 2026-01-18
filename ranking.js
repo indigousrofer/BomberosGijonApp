@@ -27,7 +27,7 @@ async function renderRankingSection(isBack = false) {
         </div>
     `;
 
-    render(html, 'Ranking', { level: 1, section: 'ranking' }, isBack);
+    render(html, 'Refuerzos', { level: 1, section: 'ranking' }, isBack);
 
     // LÓGICA DE SELECCIÓN POR DEFECTO MÁS ROBUSTA
     let targetTurno = 'T1'; // Default

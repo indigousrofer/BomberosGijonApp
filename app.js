@@ -213,9 +213,24 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
   render(`<div id="map"></div>`, 'Mapa de Elementos', { level: 1, section: 'mapa' }, isBack);
 
   setTimeout(() => {
+
+
     // 1. INICIALIZACIÓN SIMPLE (Restaurada de versión antigua)
     // Sin listeners de touchmove ni gesturestart agresivos
-    const map = L.map('map').setView([43.5322, -5.6611], 14);
+    const map = L.map('map', {
+      touchZoom: true,          // Habilita zoom con dos dedos
+      bounceAtZoomLimits: true,
+      zoomControl: true         // Mantiene los botones + y -
+    }).setView([43.5322, -5.6611], 14);
+
+    // Forzamos que el contenedor del mapa ignore el sistema de capas superior
+    const mapContainer = document.getElementById('map');
+    mapContainer.addEventListener('pointerdown', (e) => e.stopPropagation());
+    mapContainer.addEventListener('touchstart', (e) => e.stopPropagation());
+
+    // IMPORTANTE: Asegurarnos que Leaflet tiene el control táctil
+    map.scrollWheelZoom.enable();
+    map.touchZoom.enable();
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap'
@@ -573,9 +588,14 @@ function render(contentHTML, title, state, isBack = false) {
     // Evita que te “herede” el zoom de la pantalla anterior
     resetAppZoom();
   }
+  // ✅ CONTROL CRÍTICO: Si NO es el mapa, bloqueamos el zoom nativo para usar el tuyo.
+  // Si ES el mapa, permitimos que el navegador (y Leaflet) gestionen los dedos.
   if (mainScroll) {
-    mainScroll.scrollTop = 0;
-    mainScroll.scrollLeft = 0;
+    if (state.section === 'mapa') {
+      mainScroll.style.touchAction = 'auto'; // Deja que Leaflet trabaje
+    } else {
+      mainScroll.style.touchAction = 'pan-x pan-y'; // Tu sistema de zoom toma el control
+    }
   }
   if (zoomLayer) {
     // Por si quedara algún transform colgado por cualquier razón
@@ -700,6 +720,8 @@ function initAppZoom() {
   // IMPORTANTE: passive:false para poder usar preventDefault()
   // IMPORTANTE: passive:false para poder usar preventDefault()
   mainScroll.addEventListener('pointerdown', (e) => {
+    // NUEVA LÍNEA: Si el toque es dentro del mapa, no ejecutar el zoom de la App
+    if (e.target.closest('#map')) return;
     __appZoom.pointers.set(e.pointerId, e);
 
     // SOLO si ya estamos con zoom, capturamos para hacer pan, y prevenimos default
@@ -744,6 +766,7 @@ function initAppZoom() {
   }, { passive: false });
 
   mainScroll.addEventListener('pointermove', (e) => {
+    if (e.target.closest('#map')) return; // IGNORAR SI ES EL MAPA
     if (!__appZoom.pointers.has(e.pointerId)) return;
     __appZoom.pointers.set(e.pointerId, e);
 
