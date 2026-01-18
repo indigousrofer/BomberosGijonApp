@@ -219,6 +219,10 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
     // Sin listeners de touchmove ni gesturestart agresivos
     const map = L.map('map').setView([43.5322, -5.6611], 14);
 
+    // IMPORTANTE: Asegurarnos que Leaflet tiene el control táctil
+    map.scrollWheelZoom.enable();
+    map.touchZoom.enable();
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap'
     }).addTo(map);
@@ -575,9 +579,14 @@ function render(contentHTML, title, state, isBack = false) {
     // Evita que te “herede” el zoom de la pantalla anterior
     resetAppZoom();
   }
+  // ✅ CONTROL CRÍTICO: Si NO es el mapa, bloqueamos el zoom nativo para usar el tuyo.
+  // Si ES el mapa, permitimos que el navegador (y Leaflet) gestionen los dedos.
   if (mainScroll) {
-    mainScroll.scrollTop = 0;
-    mainScroll.scrollLeft = 0;
+    if (state.section === 'mapa') {
+      mainScroll.style.touchAction = 'auto'; // Deja que Leaflet trabaje
+    } else {
+      mainScroll.style.touchAction = 'pan-x pan-y'; // Tu sistema de zoom toma el control
+    }
   }
   if (zoomLayer) {
     // Por si quedara algún transform colgado por cualquier razón

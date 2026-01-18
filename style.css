@@ -462,14 +462,22 @@ a {
     /* Ancho total de la ventana */
     height: calc(100vh - 60px - env(safe-area-inset-top));
     /* Altura total menos el header real */
-    margin-top: -20px;
+    margin-top: -10px;
+    /* Ajustado para tu nuevo padding */
     /* Compensa el padding superior de #app-content */
     margin-left: -20px;
+    margin-right: -20px;
     /* Compensa el padding izquierdo de #app-content */
     position: relative;
     z-index: 1;
 
-    /* touch-action: none Eliminado a petición para restaurar comportamiento antiguo */
+    /* QUITAMOS touch-action: none si estuviera, debe ser auto */
+    touch-action: auto !important;
+}
+
+/* Evita que el contenedor de zoom global interfiera con el mapa */
+body.zoom-active #map {
+    touch-action: auto;
 }
 
 .leaflet-control-layers {
