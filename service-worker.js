@@ -5,7 +5,7 @@
    ========================================================= */
 
 // 1) Sube este número SOLO cuando publiques una versión nueva
-const CACHE_NAME = 'bomberos-v83';
+const CACHE_NAME = 'bomberos-v84';
 
 // 2) Solo los “core assets” imprescindibles (app shell)
 // OJO: si tu app vive bajo /BomberosGijonApp/ usa rutas coherentes con eso.
