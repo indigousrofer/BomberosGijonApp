@@ -471,7 +471,6 @@ a {
 
     /* touch-action: none Eliminado a petición para restaurar comportamiento antiguo */
 }
-}
 
 .leaflet-control-layers {
     background: white;
