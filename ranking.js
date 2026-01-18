@@ -29,12 +29,25 @@ async function renderRankingSection(isBack = false) {
 
     render(html, 'Ranking', { level: 1, section: 'ranking' }, isBack);
 
+    // LÓGICA DE SELECCIÓN POR DEFECTO MÁS ROBUSTA
+    let targetTurno = 'T1'; // Default
     if (currentUser && currentUser.profile && currentUser.profile.turno) {
-        document.getElementById('ranking-turno-select').value = currentUser.profile.turno;
-        renderTurnoTables(currentUser.profile.turno);
-    } else {
-        renderTurnoTables('T1');
+        targetTurno = currentUser.profile.turno.trim();
     }
+
+    const select = document.getElementById('ranking-turno-select');
+    if (select) {
+        select.value = targetTurno;
+        // Si el valor guardado no coincide con ninguna opción, el select no cambiará o se quedará en blanco/default.
+        // Verificamos si realmente se aplicó (o si targetTurno era "Turno 5" en vez de "T5")
+        if (select.value !== targetTurno) {
+            console.warn(`El turno del usuario (${targetTurno}) no coincide con el select. Usando T1.`);
+            targetTurno = 'T1';
+            select.value = 'T1';
+        }
+    }
+
+    renderTurnoTables(targetTurno);
 }
 
 // --- LÓGICA DE DATOS Y RENDERIZADO DE TABLAS ---
