@@ -5,7 +5,9 @@
    ========================================================= */
 
 // 1) Sube este número SOLO cuando publiques una versión nueva
+<<<<<<< HEAD
 const CACHE_NAME = 'bomberos-v95';
+=======
 
 // 2) Solo los “core assets” imprescindibles (app shell)
 // OJO: si tu app vive bajo /BomberosGijonApp/ usa rutas coherentes con eso.
@@ -103,6 +105,7 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
 
 
 
