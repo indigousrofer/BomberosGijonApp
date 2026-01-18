@@ -213,29 +213,9 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
   render(`<div id="map"></div>`, 'Mapa de Elementos', { level: 1, section: 'mapa' }, isBack);
 
   setTimeout(() => {
-    // FIX DE ZOOM SIMPLIFICADO:
-    // Con la etiqueta meta viewport correcta (user-scalable=0), el navegador NO debería hacer zoom de página.
-    // Dejamos que Leaflet maneje el touch por defecto.
-
-    const mapContainer = document.getElementById('map');
-    if (mapContainer) {
-      // Asegurar que el contenedor no tenga touch-action: none forzado si Leaflet lo necesita
-      mapContainer.style.touchAction = 'none';
-    }
-
-    const map = L.map('map', {
-      zoomControl: false,
-      tap: true,
-      // Habilitar todas las opciones tactiles nativas de Leaflet
-      dragging: true,
-      touchZoom: true,
-      scrollWheelZoom: true,
-      doubleClickZoom: true,
-      boxZoom: true
-    }).setView([43.5322, -5.6611], 14);
-
-    // Re-añadir controles si los quitaste en las opciones constructoras
-    L.control.zoom({ position: 'topleft' }).addTo(map);
+    // 1. INICIALIZACIÓN SIMPLE (Restaurada de versión antigua)
+    // Sin listeners de touchmove ni gesturestart agresivos
+    const map = L.map('map').setView([43.5322, -5.6611], 14);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap'
@@ -264,7 +244,6 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
       { url: 'mapa/br-s.geojson', color: 'green', label: 'Bocas riego sur', isPoint: true, tipoIcono: 'boca' }
     ];
 
-    // --- INICIALIZAR EL CONTROL DE CAPAS ---
     const selectorCapas = L.control.layers(null, {}, { collapsed: false }).addTo(map);
 
     capasConfig.forEach(capa => {
@@ -287,23 +266,18 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
             }
           });
 
-          // --- LÓGICA DE VISIBILIDAD INICIAL ---
-          // Solo añadimos al mapa directamente si es Límite o Hidrante
           if (capa.label === 'Límites concejo' || capa.label === 'Hidrantes') {
             geojsonLayer.addTo(map);
           }
 
-          // Añadimos siempre al selector de capas para que el usuario pueda encenderlas
           selectorCapas.addOverlay(geojsonLayer, capa.label);
         });
     });
 
-    // --- CAPA DE UBICACIÓN DE DOTACIONES (Realtime) ---
+    // --- 2. FUNCIONALIDAD NUEVA: UBICACIÓN DOTACIONES (MANTENIDA) ---
     const ubicacionLayer = L.layerGroup();
-    // No la añadimos al mapa por defecto (solo al selector)
     selectorCapas.addOverlay(ubicacionLayer, "Ubicación dotaciones <span style='font-size:0.8em'>🔴 EN VIVO</span>");
 
-    // Icono por defecto (si no encaja con ninguno especial)
     const iconoDefault = L.divIcon({
       html: '<div style="background-color: white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5); width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-size: 20px;">🚒</div>',
       className: '',
@@ -312,9 +286,7 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
       popupAnchor: [0, -15]
     });
 
-    // Función para obtener icono personalizado
     const getIconForUser = (userId) => {
-      // Normalizamos el ID para comprobar
       const id = userId.toLowerCase().trim();
       let iconUrl = null;
 
@@ -325,7 +297,7 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
       if (iconUrl) {
         return L.icon({
           iconUrl: iconUrl,
-          iconSize: [40, 40], // Tamaño un poco más grande para vehículos
+          iconSize: [40, 40],
           iconAnchor: [20, 20],
           popupAnchor: [0, -20]
         });
@@ -333,7 +305,6 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
       return iconoDefault;
     };
 
-    // Referencia a la escucha de Firebase para poder apagarla
     let usuariosRef = null;
     const onLocationUpdate = (snapshot) => {
       ubicacionLayer.clearLayers();
@@ -343,13 +314,11 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
       Object.keys(usuarios).forEach(userId => {
         const data = usuarios[userId];
         if (data.lat && data.lng) {
-          // zIndexOffset alto para que siempre salga encima de hidrantes y bocas
           const marker = L.marker([data.lat, data.lng], {
             icon: getIconForUser(userId),
             zIndexOffset: 10000
           });
 
-          // Formatear la última actualización
           let timeStr = "";
           if (data.timestamp) {
             const date = new Date(data.timestamp);
@@ -362,7 +331,6 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
       });
     };
 
-    // Eventos para encender/apagar la escucha de Firebase
     map.on('overlayadd', (e) => {
       if (e.name.includes("Ubicación dotaciones")) {
         console.log("Activando escucha de ubicaciones...");
@@ -383,6 +351,7 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
         ubicacionLayer.clearLayers();
       }
     });
+
 
 
   }, 200);
