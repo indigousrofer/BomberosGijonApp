@@ -213,16 +213,7 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
   render(`<div id="map"></div>`, 'Mapa de Elementos', { level: 1, section: 'mapa' }, isBack);
 
   setTimeout(() => {
-    // 0. BLOQUEO MANUAL DE ZOOM (Nuclear Option)
-    // Imprescindible si el navegador ignora touch-action: none
-    const mapContainer = document.getElementById('map');
-    if (mapContainer) {
-      mapContainer.addEventListener('touchmove', (e) => {
-        if (e.touches.length > 1) {
-          e.preventDefault();
-        }
-      }, { passive: false });
-    }
+
 
     // 1. INICIALIZACIÓN SIMPLE (Restaurada de versión antigua)
     // Sin listeners de touchmove ni gesturestart agresivos
