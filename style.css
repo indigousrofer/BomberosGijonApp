@@ -468,6 +468,9 @@ a {
     /* Compensa el padding izquierdo de #app-content */
     position: relative;
     z-index: 1;
+
+    /* REGLA CRÍTICA: Bloquea zoom de página, permite gestos controlados por JS (Leaflet) */
+    touch-action: none;
 }
 
 .leaflet-control-layers {
