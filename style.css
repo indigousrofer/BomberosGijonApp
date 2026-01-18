@@ -51,20 +51,19 @@ header {
 
 /* Forzamos que los laterales midan lo mismo para que el centro sea real */
 .header-left,
-#header-action-icon {
+.header-action-icon-container {
     width: 50px;
-    height: 100%;
     display: flex;
     align-items: center;
     flex-shrink: 0;
-    /* Importante para el centrado: si está oculto, usamos visibility para mantener espacio */
 }
 
-/* Modificación para LOGIN: En lugar de display:none en JS, usaremos una clase .hidden-visual 
-   que use visibility:hidden para mantener el hueco y que el título siga centrado. */
-
 #header-action-icon {
+    /* Eliminado height: 100% para evitar recorte en iOS */
+    display: flex;
+    align-items: center;
     justify-content: flex-end;
+    width: 50px;
 }
 
 header h1 {
@@ -119,7 +118,8 @@ h1 {
 }
 
 #app-content {
-    padding: 20px;
+    /* Reducido de 20px a 10px para disminuir el hueco con el header */
+    padding: 10px 20px;
 }
 
 /* Estilos de Botones y Listas */
