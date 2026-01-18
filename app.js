@@ -213,34 +213,25 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
   render(`<div id="map"></div>`, 'Mapa de Elementos', { level: 1, section: 'mapa' }, isBack);
 
   setTimeout(() => {
-    // FIX DE ZOOM MEJORADO (RETRY):
+    // FIX DE ZOOM SIMPLIFICADO:
+    // Con la etiqueta meta viewport correcta (user-scalable=0), el navegador NO debería hacer zoom de página.
+    // Dejamos que Leaflet maneje el touch por defecto.
+
     const mapContainer = document.getElementById('map');
-
-    // 1. Aplicamos estilo inline para reforzar (solo en el mapa)
     if (mapContainer) {
+      // Asegurar que el contenedor no tenga touch-action: none forzado si Leaflet lo necesita
       mapContainer.style.touchAction = 'none';
-      mapContainer.style.webkitUserSelect = 'none';
-    }
-
-    // 2. Listener agresivo para evitar zoom de página con 2 dedos
-    const preventZoom = (e) => {
-      // Si hay más de 1 dedo, bloqueamos TODO para que el navegador no haga zoom nativo
-      if (e.touches && e.touches.length > 1) {
-        e.preventDefault();
-        e.stopPropagation(); // Evita que suba al body
-      }
-    };
-
-    if (mapContainer) {
-      // 'passive: false' es obligatorio para poder usar preventDefault
-      mapContainer.addEventListener('touchmove', preventZoom, { passive: false });
-      // Evitar cualquier otro gesto nativo
-      mapContainer.addEventListener('gesturestart', (e) => e.preventDefault());
     }
 
     const map = L.map('map', {
       zoomControl: false,
-      tap: true // Ayuda en móviles a veces
+      tap: true,
+      // Habilitar todas las opciones tactiles nativas de Leaflet
+      dragging: true,
+      touchZoom: true,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      boxZoom: true
     }).setView([43.5322, -5.6611], 14);
 
     // Re-añadir controles si los quitaste en las opciones constructoras

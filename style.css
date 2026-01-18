@@ -11,10 +11,18 @@
     /* Permite scroll vertical */
     overflow-x: hidden;
     position: relative;
-    /* Espacio para el header fijo + notch */
-    padding-top: calc(60px + env(safe-area-inset-top));
+    /* AJUSTE HUECO: Reducimos espacio. Antes era calc(60px + env...). 
+       Al usar fixed header, a veces safe-area se suma doble visualmente en algunos dispositivos. 
+       Probamos con un valor menor o quitando safe-area de aqui si el header ya lo tiene.
+    */
+    padding-top: calc(50px + env(safe-area-inset-top));
     /* Fix para rebote elastico molesto en iOS */
     overscroll-behavior-y: none;
+
+    /* Evitar selección de texto y "callouts" accidental del sistema */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 body {
