@@ -469,7 +469,8 @@ a {
     position: relative;
     z-index: 1;
 
-    /* touch-action: none Eliminado a petición para restaurar comportamiento antiguo */
+    /* REGLA CRÍTICA: Bloquea zoom de página, permite gestos controlados por JS (Leaflet) */
+    touch-action: none !important;
 }
 
 .leaflet-control-layers {
