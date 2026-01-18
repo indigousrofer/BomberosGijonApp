@@ -11,8 +11,10 @@
     /* Permite scroll vertical */
     overflow-x: hidden;
     position: relative;
-    padding-top: 60px;
-    /* Espacio para el header fijo */
+    /* Espacio para el header fijo + notch */
+    padding-top: calc(60px + env(safe-area-inset-top));
+    /* Fix para rebote elastico molesto en iOS */
+    overscroll-behavior-y: none;
 }
 
 body {
@@ -28,18 +30,14 @@ body {
 header {
     background-color: #AA1915;
     color: white;
-    padding: 0 15px;
-    display: flex;
-    justify-content: space-between;
-    /* Empuja los iconos a los bordes */
-    align-items: center;
+
+    /* Altura dinÃ¡mica para soportar notch */
     height: calc(60px + env(safe-area-inset-top));
-    /* Altura adaptativa al notch */
     padding-top: env(safe-area-inset-top);
-    /* Empujar contenido abajo del notch */
     padding-left: 15px;
     padding-right: 15px;
 
+    /* PosiciÃ³n fija real */
     position: fixed;
     top: 0;
     left: 0;
@@ -71,10 +69,8 @@ header {
 
 header h1 {
     position: absolute;
-    /* Centrado absoluto infalible */
     left: 50%;
     top: calc(50% + (env(safe-area-inset-top) / 2));
-    /* Centrado vertical compensando el notch */
     transform: translate(-50%, -50%);
 
     text-align: center;
@@ -87,7 +83,6 @@ header h1 {
 
     width: auto;
     max-width: calc(100% - 120px);
-    /* Dejar hueco a los iconos */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -457,14 +452,16 @@ a {
 #map {
     width: 100vw;
     /* Ancho total de la ventana */
-    height: calc(100vh - var(--header-h));
-    /* Altura total menos el header */
+    height: calc(100vh - 60px - env(safe-area-inset-top));
+    /* Altura total menos el header real */
     margin-top: -20px;
     /* Compensa el padding superior de #app-content */
     margin-left: -20px;
     /* Compensa el padding izquierdo de #app-content */
     position: relative;
     z-index: 1;
+    /* CRÍTICO: Evita que el navegador haga zoom a toda la página al pellizcar el mapa */
+    touch-action: none;
 }
 
 .leaflet-control-layers {
