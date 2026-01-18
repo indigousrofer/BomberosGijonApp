@@ -5,7 +5,7 @@
    ========================================================= */
 
 // 1) Sube este número SOLO cuando publiques una versión nueva
-const CACHE_NAME = 'bomberos-v62';
+const CACHE_NAME = 'bomberos-v81';
 
 // 2) Solo los “core assets” imprescindibles (app shell)
 // OJO: si tu app vive bajo /BomberosGijonApp/ usa rutas coherentes con eso.
@@ -15,6 +15,10 @@ const CORE_ASSETS = [
   './style.css',
   './app.js',
   './data.js',
+  './calendar.js',
+  './admin.js',
+  './ranking.js',
+  './app_register_helper.js',
   './manifest.json',
   './images/icon-192.png',
   './images/favicon.png',
@@ -27,8 +31,8 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS))
   );
-  // Importante: NO skipWaiting aquí.
-  // Queremos que el SW nuevo se quede WAITING hasta que el usuario pulse “Actualizar”.
+  // Fuerza la activación inmediata (útil en desarrollo/fix rápido)
+  self.skipWaiting();
 });
 
 // ---------------------------------------------------------

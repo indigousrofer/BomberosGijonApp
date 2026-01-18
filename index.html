@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Bomberos Gijón</title>
+	<meta charset="UTF-8">
+	<meta name="viewport"
+		content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<title>Bomberos Gijón</title>
 	<link rel="manifest" href="manifest.json">
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,31 +14,38 @@
 	<link rel="apple-touch-icon" href="images/icon-192.png">
 	<link rel="icon" type="image/png" href="images/favicon.png">
 	<link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png">
-    <link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="style.css">
 	<script>
-	  if ('serviceWorker' in navigator) {
-	    window.addEventListener('load', () => {
-	      navigator.serviceWorker.register('./service-worker.js')
-	        .then(reg => console.log('Service Worker registrado con éxito', reg))
-	        .catch(err => console.log('Error al registrar Service Worker', err));
-	    });
-	  }
+		if ('serviceWorker' in navigator) {
+			window.addEventListener('load', () => {
+				navigator.serviceWorker.register('./service-worker.js')
+					.then(reg => console.log('Service Worker registrado con éxito', reg))
+					.catch(err => console.log('Error al registrar Service Worker', err));
+			});
+		}
 	</script>
 	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 	<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
 	<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 	<script src="data.js" defer></script>
+	<script src="calendar.js" defer></script>
+	<script src="admin.js" defer></script>
+	<script src="ranking.js" defer></script>
+	<script src="app_register_helper.js" defer></script>
 	<script src="app.js" defer></script>
 </head>
+
 <body>
-    <header>
+	<header>
 		<div class="header-left">
 			<button id="back-button" style="display: none;">
 				<img src="images/back-icon.png" alt="Volver" id="back-icon-img">
 			</button>
 		</div>
-		
+
 		<h1>Bomberos Gijón</h1>
 
 		<div id="header-action-icon" onclick="goToHome()">
@@ -44,16 +53,13 @@
 		</div>
 	</header>
 
-    <main id="main-scroll">
-	  <div id="zoom-layer">
-	    <div id="app-content"></div>
-	  </div>
+	<main id="main-scroll">
+		<div id="zoom-layer">
+			<div id="app-content"></div>
+		</div>
 	</main>
 
 
 </body>
 
 </html>
-
-
-
