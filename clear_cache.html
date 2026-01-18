@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reparar App - Bomberos Gijón</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            text-align: center;
+            background: #f0f0f0;
+        }
+
+        .btn {
+            background: #AA1915;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        #status {
+            margin-top: 20px;
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🛠️ Reparar Aplicación</h1>
+    <p>Si la App se ha quedado bloqueada o en blanco, pulsa el botón para borrar los datos antiguos y recargar la nueva
+        versión.</p>
+
+    <button class="btn" onclick="hardReset()">🔄 REPARAR AHORA</button>
+
+    <div id="status"></div>
+
+    <script>
+        async function hardReset() {
+            const status = document.getElementById('status');
+            status.innerHTML = "Iniciando limpieza...";
+
+            try {
+                // 1. Desregistrar Service Workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                        status.innerHTML += "<br>✅ Service Worker eliminado.";
+                    }
+                }
+
+                // 2. Borrar Cache Storage
+                if ('caches' in window) {
+                    const keys = await caches.keys();
+                    for (let key of keys) {
+                        await caches.delete(key);
+                        status.innerHTML += "<br>✅ Caché borrada: " + key;
+                    }
+                }
+
+                // 3. Borrar LocalStorage y SessionStorage (Opcional, pero recomendado si hay datos corruptos)
+                // localStorage.clear(); // OJO: Esto borra TODO. Quizás mejor borrar solo claves especificas si fuera necesario.
+                // status.innerHTML += "<br>✅ Datos locales limpiados.";
+
+                status.innerHTML += "<br><br><b>¡LISTO!</b><br>Redirigiendo a la App en 3 segundos...";
+
+                setTimeout(() => {
+                    window.location.href = "index.html?v=" + new Date().getTime(); // Forzar recarga sin caché
+                }, 3000);
+
+            } catch (error) {
+                status.innerHTML += "<br>❌ Error: " + error.message;
+            }
+        }
+    </script>
+</body>
+
+</html>
