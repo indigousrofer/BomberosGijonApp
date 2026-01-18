@@ -213,7 +213,28 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
   render(`<div id="map"></div>`, 'Mapa de Elementos', { level: 1, section: 'mapa' }, isBack);
 
   setTimeout(() => {
-    const map = L.map('map').setView([43.5322, -5.6611], 14);
+    // FIX DE ZOOM: Usamos JS puro para evitar el zoom de la página al pellizcar el mapa
+    const mapContainer = document.getElementById('map');
+
+    // Evita el comportamiento por defecto (zoom de página) si hay 2 dedos
+    mapContainer.addEventListener('touchmove', (e) => {
+      if (e.touches && e.touches.length > 1) {
+        e.preventDefault();
+      }
+    }, { passive: false }); // 'passive: false' es obligatorio para poder usar preventDefault
+
+    // Evita gestos de "doble tap" o manipulaciones extrañas
+    mapContainer.addEventListener('gesturestart', (e) => {
+      e.preventDefault();
+    });
+
+    const map = L.map('map', {
+      zoomControl: false, // Opcional: si quieres mover los controles o algo
+      tap: true // Ayuda en móviles a veces
+    }).setView([43.5322, -5.6611], 14);
+
+    // Re-añadir controles si los quitaste en las opciones constructoras
+    L.control.zoom({ position: 'topleft' }).addTo(map);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap'
