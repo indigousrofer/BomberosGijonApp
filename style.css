@@ -7,10 +7,12 @@
 #main-scroll {
     width: 100vw;
     height: 100vh;
-    overflow-y: auto; /* Permite scroll vertical */
+    overflow-y: auto;
+    /* Permite scroll vertical */
     overflow-x: hidden;
     position: relative;
-    padding-top: 60px; /* Espacio para el header fijo */
+    padding-top: 60px;
+    /* Espacio para el header fijo */
 }
 
 body {
@@ -19,7 +21,8 @@ body {
     padding: 0;
     background-color: #f0f0f0;
     color: #333;
-    overflow: hidden; /* El body no scrollea, lo hace #main-scroll */
+    overflow: hidden;
+    /* El body no scrollea, lo hace #main-scroll */
 }
 
 header {
@@ -27,41 +30,67 @@ header {
     color: white;
     padding: 0 15px;
     display: flex;
-    justify-content: space-between; /* Empuja los iconos a los bordes */
+    justify-content: space-between;
+    /* Empuja los iconos a los bordes */
     align-items: center;
-    height: 60px;
-    position: fixed + env(safe-area-inset-top);
+    height: calc(60px + env(safe-area-inset-top));
+    /* Altura adaptativa al notch */
+    padding-top: env(safe-area-inset-top);
+    /* Empujar contenido abajo del notch */
+    padding-left: 15px;
+    padding-right: 15px;
+
+    position: fixed;
     top: 0;
+    left: 0;
+    width: 100%;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     z-index: 1001;
 }
 
 /* Forzamos que los laterales midan lo mismo para que el centro sea real */
-.header-left, #header-action-icon {
-    width: 50px; 
+.header-left,
+#header-action-icon {
+    width: 50px;
+    height: 100%;
     display: flex;
     align-items: center;
     flex-shrink: 0;
+    /* Importante para el centrado: si está oculto, usamos visibility para mantener espacio */
 }
+
+/* Modificación para LOGIN: En lugar de display:none en JS, usaremos una clase .hidden-visual 
+   que use visibility:hidden para mantener el hueco y que el título siga centrado. */
 
 #header-action-icon {
     justify-content: flex-end;
 }
 
 header h1 {
-    flex-grow: 1; /* Ocupa todo el espacio entre iconos */
+    position: absolute;
+    /* Centrado absoluto infalible */
+    left: 50%;
+    top: calc(50% + (env(safe-area-inset-top) / 2));
+    /* Centrado vertical compensando el notch */
+    transform: translate(-50%, -50%);
+
     text-align: center;
     margin: 0;
     font-size: 1.1rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
-    /* --- SOMBRA AL TEXTO --- */
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4); /* Sombra suave en negro con 40% de opacidad */
-    
-    /* Evita que se corte y pone puntos suspensivos si es muy largo */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+
+    width: auto;
+    max-width: calc(100% - 120px);
+    /* Dejar hueco a los iconos */
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 #back-button {
@@ -99,7 +128,8 @@ h1 {
 }
 
 /* Estilos de Botones y Listas */
-.list-item, .view-button {
+.list-item,
+.view-button {
     background-color: white;
     border: 1px solid #ccc;
     padding: 15px;
@@ -110,7 +140,9 @@ h1 {
     font-size: 1.1em;
 }
 
-.list-item:hover, .view-button:hover, .hotspot:hover {
+.list-item:hover,
+.view-button:hover,
+.hotspot:hover {
     background-color: #ffe4e4;
 }
 
@@ -132,35 +164,39 @@ h1 {
 .hotspot {
     position: absolute;
     /* Mantenemos el área clicable transparente para no tapar la imagen */
-    background-color: rgba(28, 160, 236, 0.411); 
+    background-color: rgba(28, 160, 236, 0.411);
     border: 2px dashed rgba(255, 255, 255, 0.6);
-	z-index: 999;
+    z-index: 999;
     cursor: pointer;
-    
+
     /* Configuración para centrar el contenido (el texto) */
     display: flex;
-    justify-content: center; /* Centrado horizontal */
-    align-items: center; /* Centrado vertical */
+    justify-content: center;
+    /* Centrado horizontal */
+    align-items: center;
+    /* Centrado vertical */
     text-align: center;
 
     /* --- ANIMACIÓN DE PULSACIÓN --- */
-    animation: hotspot-pulse 1s infinite ease-in-out; /* 2 segundos, se repite infinito */
+    animation: hotspot-pulse 1s infinite ease-in-out;
+    /* 2 segundos, se repite infinito */
 
 }
 
 /* Estilo para el texto que va dentro del hotspot */
 .hotspot-label {
-    background-color: rgba(17, 46, 138, 0.9); /* Fondo rojo oscuro y opaco */
-    color: white; 
+    background-color: rgba(17, 46, 138, 0.9);
+    /* Fondo rojo oscuro y opaco */
+    color: white;
     padding: 3px 8px;
     border-radius: 4px;
     font-size: 0.9em;
     font-weight: bold;
     line-height: 1.2;
     text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
-    
+
     /* Asegura que el texto no desborde y se mantenga en el centro */
-    max-width: 90%; 
+    max-width: 90%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -179,17 +215,21 @@ h1 {
 /* Tarjetas de vehículos en el nivel 1 */
 .vehicle-card {
     background: white;
-    border: none; 
+    border: none;
     border-radius: 12px;
     margin-bottom: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s, background-color 0.2s;
-    
+
     /* --- CAMBIO CLAVE: Disposición Horizontal --- */
-    display: flex;         /* Activa Flexbox */
-    align-items: center;   /* Alinea verticalmente la imagen y el texto */
-    gap: 15px;             /* Espacio entre la foto y el texto */
-    padding: 15px;         /* Añade padding dentro de la tarjeta */
+    display: flex;
+    /* Activa Flexbox */
+    align-items: center;
+    /* Alinea verticalmente la imagen y el texto */
+    gap: 15px;
+    /* Espacio entre la foto y el texto */
+    padding: 15px;
+    /* Añade padding dentro de la tarjeta */
 }
 
 .vehicle-card:active {
@@ -198,16 +238,20 @@ h1 {
 }
 
 .vehicle-thumb {
-    width: 100px; /* Tamaño fijo para la miniatura */
+    width: 100px;
+    /* Tamaño fijo para la miniatura */
     height: 70px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    object-fit: contain; /* Asegura que la imagen se vea bien en el espacio fijo */
-    flex-shrink: 0; /* IMPEDIMOS que la imagen se reduzca si hay mucho texto */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    object-fit: contain;
+    /* Asegura que la imagen se vea bien en el espacio fijo */
+    flex-shrink: 0;
+    /* IMPEDIMOS que la imagen se reduzca si hay mucho texto */
 }
 
 .vehicle-info {
-    flex-grow: 1; /* Permite que el texto ocupe todo el espacio restante */
+    flex-grow: 1;
+    /* Permite que el texto ocupe todo el espacio restante */
 }
 
 .vehicle-info h2 {
@@ -227,9 +271,9 @@ h1 {
 .list-item,
 button,
 a {
-  -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-  user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
 }
 
 /* Opcional: Para que se vea bien en tabletas, podemos usar una cuadrícula */
@@ -244,11 +288,15 @@ a {
 }
 
 .header-icon {
-    width: 30px;        /* Tamaño del icono en la cabecera */
+    width: 30px;
+    /* Tamaño del icono en la cabecera */
     height: 30px;
-    vertical-align: middle; /* Alinea el icono con el centro del texto */
-    margin-right: 10px;    /* Espacio entre el icono y el texto */
-    border-radius: 4px;    /* Un pequeño redondeado */
+    vertical-align: middle;
+    /* Alinea el icono con el centro del texto */
+    margin-right: 10px;
+    /* Espacio entre el icono y el texto */
+    border-radius: 4px;
+    /* Un pequeño redondeado */
 }
 
 /* --- SECCIÓN DE TABLAS DE INVENTARIO ACTUALIZADA --- */
@@ -259,7 +307,7 @@ a {
     background: white;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 /* CABECERA ROJA: Sobrescribe el color de la fila */
@@ -278,23 +326,30 @@ a {
 }
 
 /* Asegurar que el texto dentro del kit sea negro para legibilidad */
-.kit-row .col-qty, .kit-row .col-name {
+.kit-row .col-qty,
+.kit-row .col-name {
     color: #000 !important;
 }
 
 /* COLUMNA CANTIDAD: Ancho fijo y centrado perfecto */
 .col-qty {
-    width: 60px !important;      /* Aumentamos el ancho según tu petición */
-    flex: 0 0 60px !important;   /* Bloqueo total para que no se estreche */
-    display: flex !important;    /* Forzamos flexbox */
-    align-items: center !important;    /* CENTRADO VERTICAL REAL */
-    justify-content: center !important;  /* Centrado horizontal */
-    
+    width: 60px !important;
+    /* Aumentamos el ancho según tu petición */
+    flex: 0 0 60px !important;
+    /* Bloqueo total para que no se estreche */
+    display: flex !important;
+    /* Forzamos flexbox */
+    align-items: center !important;
+    /* CENTRADO VERTICAL REAL */
+    justify-content: center !important;
+    /* Centrado horizontal */
+
     font-weight: bold;
     border-right: 2px solid rgba(0, 0, 0, 0.1);
     box-sizing: border-box;
     padding: 10px 5px;
-    background-color: transparent !important; /* Permite ver el fondo de la fila */
+    background-color: transparent !important;
+    /* Permite ver el fondo de la fila */
     color: inherit;
 }
 
@@ -304,10 +359,12 @@ a {
     min-width: 0;
     padding: 12px 15px;
     display: flex !important;
-    align-items: center !important;    /* CENTRADO VERTICAL REAL */
+    align-items: center !important;
+    /* CENTRADO VERTICAL REAL */
     justify-content: space-between;
     word-break: break-word;
-    background-color: transparent !important; /* Permite ver el fondo de la fila */
+    background-color: transparent !important;
+    /* Permite ver el fondo de la fila */
     color: inherit;
 }
 
@@ -324,17 +381,21 @@ a {
 }
 
 .material-main-img {
-    width: 100%;           /* Ancho de la miniatura */
+    width: 100%;
+    /* Ancho de la miniatura */
     height: auto;
-	max-width: 100%;
-    object-fit: cover;      /* Mantiene la proporción sin deformar */
+    max-width: 100%;
+    object-fit: cover;
+    /* Mantiene la proporción sin deformar */
     border-radius: 5px;
-    cursor: pointer;        /* Indica que se puede ampliar */
+    cursor: pointer;
+    /* Indica que se puede ampliar */
     border: 1px solid #ddd;
 }
 
 .material-text {
-    flex: 1;                /* El texto ocupa el resto del espacio */
+    flex: 1;
+    /* El texto ocupa el resto del espacio */
 }
 
 /* Ajuste para móviles: si la pantalla es estrecha, se pone uno debajo de otro */
@@ -343,6 +404,7 @@ a {
         flex-direction: column;
         align-items: center;
     }
+
     .material-main-img {
         width: 100%;
         height: auto;
@@ -350,7 +412,8 @@ a {
 }
 
 #header-action-icon {
-    cursor: default; /* Por defecto en la principal */
+    cursor: default;
+    /* Por defecto en la principal */
     display: flex;
     align-items: center;
 }
@@ -361,7 +424,8 @@ a {
 }
 
 .header-logo-active:active {
-    transform: scale(0.9); /* Efecto al pulsar */
+    transform: scale(0.9);
+    /* Efecto al pulsar */
 }
 
 #header-logo-img {
@@ -391,10 +455,14 @@ a {
 
 /* Contenedor del mapa My Maps */
 #map {
-    width: 100vw; /* Ancho total de la ventana */
-    height: calc(100vh - var(--header-h));   /* Altura total menos el header */
-    margin-top: -20px;   /* Compensa el padding superior de #app-content */
-    margin-left: -20px;  /* Compensa el padding izquierdo de #app-content */
+    width: 100vw;
+    /* Ancho total de la ventana */
+    height: calc(100vh - var(--header-h));
+    /* Altura total menos el header */
+    margin-top: -20px;
+    /* Compensa el padding superior de #app-content */
+    margin-left: -20px;
+    /* Compensa el padding izquierdo de #app-content */
     position: relative;
     z-index: 1;
 }
@@ -403,7 +471,7 @@ a {
     background: white;
     padding: 10px;
     border-radius: 8px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
     font-weight: bold;
 }
 
@@ -418,13 +486,13 @@ a {
 
 .calendar-view {
     /* Eliminamos el min-height fijo */
-    height: auto; 
+    height: auto;
     background: white;
     border-radius: 8px;
     overflow: hidden;
     max-width: 500px;
     margin: 0 auto;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 /* Eliminamos bordes sobrantes en la última fila */
@@ -432,16 +500,22 @@ a {
     border-bottom: none;
 }
 
-.calendar-header-compact, .calendar-nav {
-    max-width: 500px;    /* Mismo ancho que el calendario */
-    margin-left: auto;   /* Centrado horizontal */
+.calendar-header-compact,
+.calendar-nav {
+    max-width: 500px;
+    /* Mismo ancho que el calendario */
+    margin-left: auto;
+    /* Centrado horizontal */
     margin-right: auto;
 }
 
 .tabla-calendario {
-    width: 100%;         /* Ocupa todo el contenedor de 500px */
-    max-width: 100%;     /* Eliminamos el max-width anterior de 400px */
-    margin: 0;           /* Quitamos márgenes porque ya los tiene el padre */
+    width: 100%;
+    /* Ocupa todo el contenedor de 500px */
+    max-width: 100%;
+    /* Eliminamos el max-width anterior de 400px */
+    margin: 0;
+    /* Quitamos márgenes porque ya los tiene el padre */
     border-collapse: collapse;
 }
 
@@ -460,13 +534,16 @@ a {
     font-weight: bold;
     font-size: 1em;
     cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .calendar-nav {
-    display: flex; /* Activa el modo horizontal */
-    justify-content: space-between; /* Separa los botones a los extremos */
-    align-items: center; /* Alinea verticalmente los iconos y el texto */
+    display: flex;
+    /* Activa el modo horizontal */
+    justify-content: space-between;
+    /* Separa los botones a los extremos */
+    align-items: center;
+    /* Alinea verticalmente los iconos y el texto */
     background: white;
     padding: 10px;
     margin-bottom: 5px;
@@ -476,7 +553,8 @@ a {
 .calendar-nav h4 {
     margin: 0;
     font-size: 1.1em;
-    flex-grow: 1; /* Permite que el nombre del mes use el espacio central */
+    flex-grow: 1;
+    /* Permite que el nombre del mes use el espacio central */
     text-align: center;
 }
 
@@ -492,7 +570,8 @@ a {
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0; /* Impide que los botones se deformen si el texto es largo */
+    flex-shrink: 0;
+    /* Impide que los botones se deformen si el texto es largo */
 }
 
 /* La flecha izquierda se rota para apuntar atrás */
@@ -501,16 +580,16 @@ a {
 }
 
 /* style.css */
-.tabla-calendario td{
-  box-sizing:border-box;
-  width:14.28%;
-  height:50px;
-  text-align:center;
-  border:1px solid #f0f0f0;
-  font-size:1.1em;
-  padding:0 !important;
-  vertical-align:middle;
-  border-radius:0 !important;
+.tabla-calendario td {
+    box-sizing: border-box;
+    width: 14.28%;
+    height: 50px;
+    text-align: center;
+    border: 1px solid #f0f0f0;
+    font-size: 1.1em;
+    padding: 0 !important;
+    vertical-align: middle;
+    border-radius: 0 !important;
 }
 
 /* Para que el número se vea bien centrado en el cuadrado de color */
@@ -531,7 +610,7 @@ a {
     padding: 10px;
     border-radius: 4px;
     margin-bottom: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .hoy-badge span {
@@ -578,7 +657,7 @@ a {
     background: white;
     padding: 20px;
     border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 /* Estilo específico para el contenido interno del Nivel 6 (Visor) */
@@ -595,41 +674,53 @@ a {
 .centered-resource {
     display: block;
     margin-top: 10px;
-    max-width: 95%; /* Evita que el contenido toque los bordes */
+    max-width: 95%;
+    /* Evita que el contenido toque los bordes */
     height: auto;
     border-radius: 8px;
 }
 
 /* Estilos específicos para el enlace de PDF (manual) */
 .list-item.manual-link {
-    display: flex; /* Permite centrar el contenido */
-    align-items: center; /* Centrado vertical del texto */
-    justify-content: flex-start; /* Alineación del icono y texto a la izquierda */
-    width: 100%; /* Ocupa el 100% del ancho del contenedor */
-    box-sizing: border-box; /* Asegura que el padding no desborde el ancho */
-    text-decoration: none; /* Quitamos el subrayado típico del enlace */
-    color: inherit; /* Hereda el color de texto */
-    padding: 15px; /* Mantiene el padding de las otras tarjetas */
-    border: 1px solid #ccc; /* Mantiene el borde de las otras tarjetas */
-    border-radius: 8px; /* Mantiene el redondeado */
+    display: flex;
+    /* Permite centrar el contenido */
+    align-items: center;
+    /* Centrado vertical del texto */
+    justify-content: flex-start;
+    /* Alineación del icono y texto a la izquierda */
+    width: 100%;
+    /* Ocupa el 100% del ancho del contenedor */
+    box-sizing: border-box;
+    /* Asegura que el padding no desborde el ancho */
+    text-decoration: none;
+    /* Quitamos el subrayado típico del enlace */
+    color: inherit;
+    /* Hereda el color de texto */
+    padding: 15px;
+    /* Mantiene el padding de las otras tarjetas */
+    border: 1px solid #ccc;
+    /* Mantiene el borde de las otras tarjetas */
+    border-radius: 8px;
+    /* Mantiene el redondeado */
     /* Nota: Debe tener la clase .list-item para que se vea igual que el resto */
 }
 
 /* --- Sombreado Alterno para Filas de Inventario --- */
 
 /* 1. Fondo principal para todas las filas (impares) */
-.inventory-row{
-  display:flex;
-  width:100%;
-  align-items:stretch;
-  min-height:50px;
-  border-bottom:1px solid #eee;
-  cursor:pointer;
-  transition:background 0.2s;
-  background-color:#fdf4f4;
+.inventory-row {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+    min-height: 50px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.2s;
+    background-color: #fdf4f4;
 }
-.inventory-row:nth-child(even){
-  background-color:#f5dbdb;
+
+.inventory-row:nth-child(even) {
+    background-color: #f5dbdb;
 }
 
 
@@ -643,20 +734,25 @@ a {
     font-weight: bold;
     margin-left: 10px;
     /* Aseguramos que el texto y el icono se mantengan en una sola línea */
-    white-space: nowrap; 
+    white-space: nowrap;
 }
 
 @keyframes hotspot-pulse {
     0% {
-        background-color: rgba(44, 203, 231, 0.2); /* suave */
+        background-color: rgba(44, 203, 231, 0.2);
+        /* suave */
         border-color: rgba(255, 255, 255, 0.6);
     }
+
     50% {
-        background-color: rgba(44, 203, 231, 0.9); /* brillante */
+        background-color: rgba(44, 203, 231, 0.9);
+        /* brillante */
         border-color: rgba(255, 255, 255, 1.0);
     }
+
     100% {
-        background-color: rgba(44, 203, 231, 0.2); /* Vuelve a suave */
+        background-color: rgba(44, 203, 231, 0.2);
+        /* Vuelve a suave */
         border-color: rgba(255, 255, 255, 0.6);
     }
 }
@@ -665,7 +761,8 @@ a {
 
 .select-nav-container {
     display: flex;
-    gap: 10px; /* Espacio entre el desplegable de mes y año */
+    gap: 10px;
+    /* Espacio entre el desplegable de mes y año */
     flex-grow: 1;
     justify-content: center;
     align-items: center;
@@ -674,16 +771,17 @@ a {
 /* style.css - Modificación en la regla de los desplegables del calendario */
 
 .select-nav-container select {
-    padding: 8px 5px 8px 12px; /* Aumentamos el padding derecho a 30px */
+    padding: 8px 5px 8px 12px;
+    /* Aumentamos el padding derecho a 30px */
     border: 1px solid #ccc;
     border-radius: 6px;
     font-size: 1em;
     font-weight: bold;
     color: #444;
     cursor: pointer;
-    
+
     /* ... (Estilos de apariencia nativa eliminados) ... */
-    
+
     /* Reposicionamos el fondo para que la flecha quede en el espacio extra de padding */
     background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%22292.4%22%3E%3Cpath%20fill%3D%22%23444%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13.2-5.4H18.6c-5%200-9.3%201.8-13%205.4A17.6%2017.6%200%200%200%200%2082.6c0%204.4%201.8%208.7%205.4%2012L146.2%20227.4c3.7%203.6%208.3%205.4%2013%205.4s9.3-1.8%2013-5.4L287%2094.6c3.7-3.3%205.4-7.6%205.4-12s-1.7-8.7-5.4-12z%22%2F%3E%3C%2Fsvg%3E');
     background-repeat: no-repeat;
@@ -693,10 +791,13 @@ a {
 
 /* Estilo para las imágenes del dashboard */
 .dashboard-icon {
-    width: 60px;  /* Ajusta el tamaño que desees */
-    height: 60px; /* Mantén el mismo valor para que sea cuadrado */
+    width: 60px;
+    /* Ajusta el tamaño que desees */
+    height: 60px;
+    /* Mantén el mismo valor para que sea cuadrado */
     margin-bottom: 10px;
-    object-fit: contain; /* Asegura que la imagen se adapte sin cortar */
+    object-fit: contain;
+    /* Asegura que la imagen se adapte sin cortar */
 }
 
 /* Opcional: Centrar el contenido de cada botón */
@@ -707,61 +808,74 @@ a {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    
+
     /* --- SEPARACIÓN VISUAL Y ELEVACIÓN --- */
-    background-color: white; /* Fondo blanco */
-    border-radius: 12px;     /* Bordes redondeados */
+    background-color: white;
+    /* Fondo blanco */
+    border-radius: 12px;
+    /* Bordes redondeados */
     padding: 20px;
-    margin-bottom: 15px;     /* Espacio entre cada tarjeta */
+    margin-bottom: 15px;
+    /* Espacio entre cada tarjeta */
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Sombra suave para que "flote" */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    /* Sombra suave para que "flote" */
     transition: transform 0.2s, box-shadow 0.2s;
-    
+
     /* Aseguramos que el texto sea visible */
     text-align: center;
 }
 
 .dashboard-item:active {
-    transform: scale(0.98); /* Efecto de pulsación */
+    transform: scale(0.98);
+    /* Efecto de pulsación */
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
 /* Ajuste del contenedor principal para añadir espacio alrededor de las tarjetas */
 .dashboard-grid {
     display: flex;
-    flex-direction: column; /* Colocamos las tarjetas una debajo de otra */
-    gap: 10px; /* Separación adicional entre filas */
-    padding: 0; /* Aseguramos que no haya padding extra en el grid */
+    flex-direction: column;
+    /* Colocamos las tarjetas una debajo de otra */
+    gap: 10px;
+    /* Separación adicional entre filas */
+    padding: 0;
+    /* Aseguramos que no haya padding extra en el grid */
 }
 
 /* Estilo para el texto debajo del icono */
 .dashboard-item p {
-    margin-top: 5px; 
+    margin-top: 5px;
     font-size: 1.1em;
-    
+
     /* --- ESTILO MODERNO Y GRUESO --- */
-    font-weight: 700; /* Hace el texto más grueso */
-    color: #444;      /* Color de texto oscuro, no negro puro */
+    font-weight: 700;
+    /* Hace el texto más grueso */
+    color: #444;
+    /* Color de texto oscuro, no negro puro */
     text-transform: uppercase;
-    
+
     /* --- SOMBRA DEL TEXTO --- */
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); /* Sombra muy ligera */
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    /* Sombra muy ligera */
 }
 
 /* style.css */
 
 .video-container {
     position: relative;
-    padding-bottom: 56.25%; /* Relación de aspecto 16:9 */
+    padding-bottom: 56.25%;
+    /* Relación de aspecto 16:9 */
     height: 0;
     overflow: hidden;
     margin-top: 10px;
     border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
-.video-container iframe, 
-.video-container video { /* <-- ASEGÚRATE DE INCLUIR LA REGLA PARA VIDEO */
+.video-container iframe,
+.video-container video {
+    /* <-- ASEGÚRATE DE INCLUIR LA REGLA PARA VIDEO */
     position: absolute;
     top: 0;
     left: 0;
@@ -773,9 +887,11 @@ a {
 /* Separación entre las nuevas tablas de secciones */
 .inventory-table-container {
     margin-bottom: 20px;
-    border: 1px solid #ddd; /* Opcional: Borde para separar visualmente */
+    border: 1px solid #ddd;
+    /* Opcional: Borde para separar visualmente */
     border-radius: 6px;
-    overflow: hidden; /* Para contener los bordes internos */
+    overflow: hidden;
+    /* Para contener los bordes internos */
 }
 
 /* Título de la Sección (Estantería) */
@@ -805,244 +921,260 @@ a {
 
 
 
-.pdf-basic{
-  position: relative;
-  height: calc(100vh - 60px); /* tu header mide 60px */
-  width: 100%;
-  overflow: hidden;
-  background: #f0f0f0;
+.pdf-basic {
+    position: relative;
+    height: calc(100vh - 60px);
+    /* tu header mide 60px */
+    width: 100%;
+    overflow: hidden;
+    background: #f0f0f0;
 }
 
-.pdf-frame{
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
+.pdf-frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
 }
 
-.pdf-download{
-  position: fixed;
-  right: 15px;
-  bottom: 25px;
-  z-index: 10002;
+.pdf-download {
+    position: fixed;
+    right: 15px;
+    bottom: 25px;
+    z-index: 10002;
 
-  background:#AA1915;
-  color:white;
-  padding:12px 20px;
-  border-radius:50px;
-  text-decoration:none;
-  font-weight:bold;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-  border:2px solid white;
+    background: #AA1915;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    border: 2px solid white;
 }
 
-html, body { height: 100%; }
+html,
+body {
+    height: 100%;
+}
 
 /* Header siempre visible */
 header {
-  position: fixed !important;
-  top: 0;
-  left: 0;
-  right: 0;
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
 }
 
 /* Zona scrolleable del contenido */
 #main-scroll {
-  flex: 1;
-  margin-top: 60px; /* altura del header */
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
+    flex: 1;
+    margin-top: 60px;
+    /* altura del header */
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
 
-  /* Permitimos pan, pero NO pinch nativo (lo hacemos nosotros) */
-  touch-action: pan-x pan-y;
+    /* Permitimos pan, pero NO pinch nativo (lo hacemos nosotros) */
+    touch-action: pan-x pan-y;
 }
 
 /* Capa que se escala/traslada (solo contenido) */
 #zoom-layer {
-  transform-origin: 0 0;
-  will-change: transform;
+    transform-origin: 0 0;
+    will-change: transform;
 }
 
 /* ---------------------------
    IMÁGENES en detalle: miniaturas a ancho completo
 --------------------------- */
 .material-detail-container {
-  display: block;              /* en vez de flex */
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+    display: block;
+    /* en vez de flex */
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
 }
 
 .material-main-img {
-  width: 100%;
-  height: auto;
-  max-width: 100%;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  display: block;
-  margin: 0 auto 12px auto;
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    display: block;
+    margin: 0 auto 12px auto;
 
-  /* que no salga el “flash azul” */
-  -webkit-tap-highlight-color: transparent;
+    /* que no salga el “flash azul” */
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* Botón invisible que envuelve miniaturas (sin efecto azul) */
 .img-thumb-btn {
-  display: block;
-  width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  text-align: left;
-  -webkit-tap-highlight-color: transparent;
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* Imágenes extra en lista */
 .material-thumb-img {
-  width: 100%;
-  height: auto;
-  max-width: 100%;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  display: block;
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    display: block;
 }
 
 /* Separación entre imágenes */
 .docs-images {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 /* ---------------------------
    VISOR OVERLAY de imagen
 --------------------------- */
 #img-viewer {
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: 60px; /* deja visible el header (60px en tu CSS) */
-  bottom: 0;
-  z-index: 10050;
-  background: rgba(0,0,0,0.88);
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 60px;
+    /* deja visible el header (60px en tu CSS) */
+    bottom: 0;
+    z-index: 10050;
+    background: rgba(0, 0, 0, 0.88);
 }
 
 #img-viewer .img-viewer-close {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  z-index: 10052;
-  border: 0;
-  border-radius: 999px;
-  padding: 10px 14px;
-  font-size: 18px;
-  font-weight: bold;
-  background: rgba(255,255,255,0.9);
-  color: #111;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    z-index: 10052;
+    border: 0;
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-size: 18px;
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.9);
+    color: #111;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
 }
 
 #img-viewer .img-viewer-viewport {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;         /* el pan lo hacemos por translate */
-  touch-action: none;       /* IMPORTANTÍSIMO: evitamos scroll/gestos del navegador */
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    /* el pan lo hacemos por translate */
+    touch-action: none;
+    /* IMPORTANTÍSIMO: evitamos scroll/gestos del navegador */
 }
 
 #img-viewer .img-viewer-layer {
-  transform-origin: 0 0;
-  will-change: transform;
+    transform-origin: 0 0;
+    will-change: transform;
 }
 
 #img-viewer img {
-  display: block;
-  max-width: 100%;
-  max-height: calc(100vh - 60px);
-  margin: 0 auto;
-  user-select: none;
-  -webkit-user-drag: none;
-  -webkit-tap-highlight-color: transparent;
+    display: block;
+    max-width: 100%;
+    max-height: calc(100vh - 60px);
+    margin: 0 auto;
+    user-select: none;
+    -webkit-user-drag: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* “tabla” estética para PDFs */
-.docs-table { display: flex; flex-direction: column; gap: 10px; }
-
-.doc-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 12px;
-  align-items: center;
-
-  background: white;
-  border: 1px solid #ccc;
-  padding: 12px 14px;
-  border-radius: 8px;
+.docs-table {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.doc-name { font-weight: 700; }
+.doc-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+
+    background: white;
+    border: 1px solid #ccc;
+    padding: 12px 14px;
+    border-radius: 8px;
+}
+
+.doc-name {
+    font-weight: 700;
+}
 
 .doc-download-btn {
-  background: #AA1915;
-  color: white;
-  text-decoration: none;
-  font-weight: 700;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 2px solid white;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-  -webkit-tap-highlight-color: transparent;
+    background: #AA1915;
+    color: white;
+    text-decoration: none;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 2px solid white;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* Evita rebotes/scroll chaining (Android) */
 #main-scroll {
-  overscroll-behavior: contain;
+    overscroll-behavior: contain;
 }
 
 /* Cuando el visor está abierto, bloquea scroll del contenedor principal */
 .no-scroll {
-  overflow: hidden !important;
+    overflow: hidden !important;
 }
 
 /* Cuando hay zoom activo, desactivamos gestos nativos para poder hacer pan propio */
 body.zoom-active #main-scroll {
-  touch-action: none;              /* clave para que el navegador no "secuestre" el gesto */
+    touch-action: none;
+    /* clave para que el navegador no "secuestre" el gesto */
 }
 
-:root{
-  --safe-top: env(safe-area-inset-top, 0px);
-  --header-h: calc(60px + var(--safe-top));
+:root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --header-h: calc(60px + var(--safe-top));
 }
 
-body{
-  padding-top: var(--header-h);
+body {
+    padding-top: var(--header-h);
 }
 
-header{
-  position: fixed;      /* en vez de sticky */
-  top: 0;
-  left: 0;
-  right: 0;
-  height: var(--header-h);
-  padding-top: var(--safe-top);
-  z-index: 1001;
+header {
+    position: fixed;
+    /* en vez de sticky */
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-h);
+    padding-top: var(--safe-top);
+    z-index: 1001;
 }
 
 /* Si tu main usa margin-top por el header, ajusta también */
 #main-scroll {
-  margin-top: calc(var(--header-base) + var(--safe-top));
-  padding-bottom: var(--safe-bottom);
+    margin-top: calc(var(--header-base) + var(--safe-top));
+    padding-bottom: var(--safe-bottom);
 }
 
-.vehicle-card, .list-item, .dashboard-item, a, button {
-  -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-  user-select: none;
+.vehicle-card,
+.list-item,
+.dashboard-item,
+a,
+button {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
 }
-	
-
-
-
-
