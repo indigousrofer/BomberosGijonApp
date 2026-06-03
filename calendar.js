@@ -48,9 +48,6 @@ async function guardarEventoCalendario(fechaStr, tipoId, horas = 24, comentario 
         await db.collection("events").doc(eventId).set(evento);
         console.log("Evento guardado:", evento);
 
-        // Actualizar estadísticas del usuario after-save
-        await actualizarEstadisticasUsuario(currentUser.uid);
-
         return true;
     } catch (e) {
         console.error("Error al guardar evento:", e);
@@ -64,7 +61,6 @@ async function borrarEventoCalendario(fechaStr) {
     const eventId = `${currentUser.uid}_${fechaStr}`;
     try {
         await db.collection("events").doc(eventId).delete();
-        await actualizarEstadisticasUsuario(currentUser.uid);
         return true;
     } catch (e) {
         console.error(e);

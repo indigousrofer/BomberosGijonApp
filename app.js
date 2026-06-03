@@ -4,6 +4,7 @@ const db = firebase.firestore();
 const rtdb = firebase.database(); // Inicializamos Realtime Database
 const auth = firebase.auth(); // Inicializamos Auth
 let currentUser = null; // Variable global para el usuario
+let __pendingSection = null; // Sección pendiente de cargar tras login
 
 let navigationHistory = [];
 let __prevViewportContent = null;
@@ -60,38 +61,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 3. CARGA DE DATOS Y ACTUALIZACIÓN
 async function initializeApp() {
-  // Escuchamos el estado de la sesión
-  // Escuchamos el estado de la sesión
+  // 1. Cargar datos de Firebase (no requieren autenticación)
+  await loadFirebaseData();
+
+  // 2. Escuchar cambios de sesión en segundo plano (sin bloquear el arranque)
   auth.onAuthStateChanged(async (user) => {
     if (user) {
       currentUser = user;
-      // Si está logueado, cargamos perfil y datos
-      render(`<div style="text-align:center; padding-top: 50px;"><p>Sincronizando Gijón...</p><div class="loader"></div></div>`, 'Cargando...', { level: -1 }, true);
-
       // Cargar perfil extendido (Turno, Rango, Stats)
       try {
         const userDoc = await db.collection('users').doc(user.uid).get();
-        if (userDoc.exists) {
-          currentUser.profile = userDoc.data();
-        } else {
-          currentUser.profile = { turno: 'T1' }; // Fallback
-        }
+        currentUser.profile = userDoc.exists ? userDoc.data() : { turno: 'T1' };
       } catch (e) { console.error("Error cargando perfil:", e); }
 
-      await loadFirebaseData();
-
-      // Si tiene turno asignado, lo ponemos por defecto en el calendario
-      if (currentUser.profile && currentUser.profile.turno) {
+      // Aplicar turno del usuario al calendario
+      if (currentUser.profile?.turno) {
         turnoSeleccionadoCal = currentUser.profile.turno;
       }
 
-      renderDashboard();
+      // Si había una sección pendiente (ej. Calendario), navegar ahora
+      if (__pendingSection === 'calendario') {
+        __pendingSection = null;
+        renderCalendarioSection();
+      }
     } else {
       currentUser = null;
-      // Si NO está logueado, mostramos Login
-      renderLogin();
     }
   });
+
+  // 3. Mostrar el Dashboard inmediatamente (sin esperar a la autenticación)
+  renderDashboard();
 }
 
 async function loadFirebaseData() {
@@ -133,7 +132,15 @@ function navigateToSection(id) {
   if (id === 'inventario') renderVehiclesList(); // ID de data.js
   if (id === 'material_global') renderGlobalMaterialList();       // ID de data.js
   if (id === 'mapa') renderMapaSection();       // ID de data.js
-  if (id === 'calendario') renderCalendarioSection(); // ID de data.js
+  if (id === 'calendario') {
+    // El Calendario requiere autenticación
+    if (currentUser) {
+      renderCalendarioSection();
+    } else {
+      __pendingSection = 'calendario';
+      renderLogin('Para acceder a tu Calendario, identifícate primero.');
+    }
+  }
   if (id === 'ranking') renderRankingSection(); // NUEVO (ranking.js)
 }
 
@@ -209,28 +216,31 @@ function getPdfDownloadHrefAndAttrs(doc) {
 // --- FUNCIÓN RENDER del mapa ---
 // --- NIVEL 1: SECCIÓN DE MAPA (ACTUALIZADA) ---
 async function renderMapaSection(isBack = false) { // <--- Añadir isBack
-  // Pasamos isBack al render
-  render(`<div id="map"></div>`, 'Mapa de Elementos', { level: 1, section: 'mapa' }, isBack);
+  // 1. Preparamos el contenedor. 
+  // Lo ponemos en el main-scroll pero FUERA del zoom-layer
+  let mapDiv = document.getElementById('map');
+  if (!mapDiv) {
+    mapDiv = document.createElement('div');
+    mapDiv.id = 'map';
+  }
+
+  // Movemos el div fuera de la capa de zoom para que no herede escalas
+  mainScroll.appendChild(mapDiv);
+
+  // Ocultamos el zoom-layer para que no moleste visualmente
+  zoomLayer.style.display = 'none';
+  mapDiv.style.display = 'block';
+
+  // Renderizamos el título (esto va al header, no afecta al mapa)
+  updateHeaderTitle('Mapa de Elementos');
 
   setTimeout(() => {
-
-
-    // 1. INICIALIZACIÓN SIMPLE (Restaurada de versión antigua)
-    // Sin listeners de touchmove ni gesturestart agresivos
+    // Inicializar Leaflet con soporte táctil total
     const map = L.map('map', {
-      touchZoom: true,          // Habilita zoom con dos dedos
-      bounceAtZoomLimits: true,
-      zoomControl: true         // Mantiene los botones + y -
+      touchZoom: true,
+      tap: false,
+      zoomControl: true
     }).setView([43.5322, -5.6611], 14);
-
-    // Forzamos que el contenedor del mapa ignore el sistema de capas superior
-    const mapContainer = document.getElementById('map');
-    mapContainer.addEventListener('pointerdown', (e) => e.stopPropagation());
-    mapContainer.addEventListener('touchstart', (e) => e.stopPropagation());
-
-    // IMPORTANTE: Asegurarnos que Leaflet tiene el control táctil
-    map.scrollWheelZoom.enable();
-    map.touchZoom.enable();
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap'
@@ -369,19 +379,33 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
 
 
 
-  }, 200);
+  }, 100);
 }
 
-// --- FUNCIÓN RENDER LOGIN (NUEVA) ---
-function renderLogin() {
-  // Limpiamos historial para que no pueda volver atrás
-  navigationHistory = [];
+// --- FUNCIÓN RENDER LOGIN ---
+// mensaje: texto contextual opcional (ej. "Para acceder al Calendario...")
+function renderLogin(mensaje = '') {
+  // Si el login es por sección pendiente, podemos volver atrás al dashboard
+  const haySeccionPendiente = !!__pendingSection;
 
-  // UI simple de Login
+  const mensajeHTML = mensaje
+    ? `<p style="color: #666; font-size: 0.9em; margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 6px;">${mensaje}</p>`
+    : '';
+
+  const cancelarHTML = haySeccionPendiente
+    ? `<div style="margin-top: 10px;">
+          <button onclick="__pendingSection = null; renderDashboard();" style="background:none; border:none; color:#999; text-decoration:underline; cursor:pointer; font-size:0.9em;">
+              Cancelar
+          </button>
+       </div>`
+    : '';
+
   const loginHTML = `
         <div style="padding: 40px 20px; text-align: center; max-width: 400px; margin: 0 auto;">
             <img src="images/favicon.png" style="width: 80px; margin-bottom: 20px;">
-            <h2 style="color: #AA1915; margin-bottom: 30px;">Bomberos Gijón</h2>
+            <h2 style="color: #AA1915; margin-bottom: 20px;">Bomberos Gijón</h2>
+
+            ${mensajeHTML}
             
             <div style="margin-bottom: 15px;">
                 <input type="email" id="login-email" placeholder="Correo electrónico" 
@@ -404,6 +428,7 @@ function renderLogin() {
                 </button>
             </div>
 
+            ${cancelarHTML}
 
             <p id="login-error" style="color: red; margin-top: 15px; display: none;"></p>
         </div>
@@ -411,7 +436,7 @@ function renderLogin() {
 
   // Renderizamos sin historial (-1) y sin botón atrás
   render(loginHTML, 'Acceso', { level: -1 }, true);
-  backButton.style.display = 'none'; // Asegurar que no sale
+  backButton.style.display = 'none';
 }
 
 // --- FUNCIÓN RENDER REGISTRO ---
@@ -577,12 +602,29 @@ function handleLogin() {
 
 function handleLogout() {
   if (confirm("¿Cerrar sesión?")) {
-    auth.signOut();
+    auth.signOut().then(() => {
+      // Re-renderizar dashboard como usuario anónimo (sin botón de sesión)
+      renderDashboard();
+    });
   }
 }
 
 // --- FUNCIÓN RENDER ---
 function render(contentHTML, title, state, isBack = false) {
+
+  // 👉 NUEVO: Limpieza del Mapa Aislado
+  // Si existe el div del mapa (que sacamos fuera), lo ocultamos para que no tape el Dashboard
+  const existingMap = document.getElementById('map');
+  if (existingMap) {
+    existingMap.style.display = 'none';
+  }
+
+  // 👉 NUEVO: Asegurar que la capa de contenido normal sea visible
+  // (Porque en la sección mapa la ocultamos)
+  if (zoomLayer) {
+    zoomLayer.style.display = 'block';
+  }
+
   // ✅ 1) SIEMPRE: resetear zoom y posición antes de dibujar una nueva pantalla
   if (typeof resetAppZoom === "function") {
     // Evita que te “herede” el zoom de la pantalla anterior
@@ -860,17 +902,22 @@ function renderDashboard(isBack = false) {
         </div>
   ` : '';
 
-  // 3. Renderizar todo junto
+  // 3. Botón cerrar sesión: solo si hay sesión activa
+  const logoutHTML = currentUser ? `
+        <div style="text-align: center; margin-top: 40px; margin-bottom: 60px;">
+            <button onclick="handleLogout()" style="background: none; border: 1px solid #ccc; padding: 10px 20px; border-radius: 20px; color: #666; font-size: 0.9em; cursor: pointer;">
+                Cerrar Sesión (${currentUser.email})
+            </button>
+        </div>
+  ` : '';
+
+  // 4. Renderizar todo junto
   render(`
         <div class="dashboard-grid">
             ${dashboardHTML}
             ${adminHTML}
         </div>
-        <div style="text-align: center; margin-top: 40px; margin-bottom: 60px;">
-             <button onclick="handleLogout()" style="background: none; border: 1px solid #ccc; padding: 10px 20px; border-radius: 20px; color: #666; font-size: 0.9em; cursor: pointer;">
-                Cerrar Sesión (${currentUser ? currentUser.email : ''})
-             </button>
-        </div>
+        ${logoutHTML}
     `, 'Bomberos Gijón', { level: 0 }, isBack);
 }
 

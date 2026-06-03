@@ -24,8 +24,18 @@ async function renderRankingSection(isBack = false) {
             <div id="ranking-container">
                 <p style="text-align:center;">Cargando datos...</p>
             </div>
+
+            <!-- Botón añadir usuario -->
+            <div style="text-align: center; padding: 25px 0 35px 0;">
+                <button onclick="abrirCrearUsuario()" 
+                        title="Añadir usuario"
+                        style="width: 48px; height: 48px; border-radius: 50%; background: #AA1915; color: white; border: none; font-size: 1.6em; line-height: 1; cursor: pointer; box-shadow: 0 3px 8px rgba(170,25,21,0.4); display: inline-flex; align-items: center; justify-content: center;">
+                    +
+                </button>
+            </div>
         </div>
     `;
+
 
     render(html, 'Refuerzos', { level: 1, section: 'ranking' }, isBack);
 
@@ -72,7 +82,7 @@ async function renderTurnoTables(turno) {
         const mandos = [];
 
         usersWithStats.forEach(u => {
-            if (u.rango === 'Bombero' || u.rango === 'Bombero-Conductor') {
+            if (u.rango === 'Bombero') {
                 bomberos.push(u);
             } else {
                 mandos.push(u);
@@ -106,9 +116,9 @@ async function renderTurnoTables(turno) {
 
         html += '<div style="height: 30px;"></div>';
 
-        // TABLA JEFES DE DOTACIÓN (Filtrar Sargentos fuera de la vista pública de esta tabla, aunque se calculen)
-        const jefesSolo = mandos.filter(u => u.rango === 'Jefe de Dotación');
-        html += generateTableHTML('Jefes de Dotación', jefesSolo, canEdit, turno, 'mandos');
+        // TABLA MANDOS (Jefes de Dotación + Sargentos)
+        html += generateTableHTML('Mandos', mandos, canEdit, turno, 'mandos');
+
 
         container.innerHTML = html;
 
@@ -118,63 +128,16 @@ async function renderTurnoTables(turno) {
     }
 }
 
-// Calcula las horas consultando la colección de eventos
+// Devuelve las horas del usuario (exclusivamente el valor manual guardado en Firestore)
 async function calculateUserStats(user) {
-    // Valores por defecto
-    let accumulatedHours = 0;
-    let isBosman = false;
-    let manualHours = user.stats?.manual_hours;
-    let lastResetDate = user.stats?.last_reset_date ? user.stats.last_reset_date.toDate() : new Date('2020-01-01');
-
-    try {
-        // Consultar eventos REF_VOL de este usuario
-        const eventsSnap = await db.collection('events')
-            .where('userId', '==', user.uid)
-            .where('type', '==', 'REF_VOL')
-            .get();
-
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-
-        let currentMonthHours = 0;
-
-        eventsSnap.docs.forEach(doc => {
-            const ev = doc.data();
-            const dateParts = ev.date.split('-'); // YYYY-MM-DD
-            const evDate = new Date(ev.date); // Cuidado con zonas horarias, pero para comparación >= sirve si usamos strings ISO o date objects UTC
-
-            // 1. Cálculo Total (Desde último reset)
-            // Comparamos fechas.
-            if (evDate >= lastResetDate) {
-                accumulatedHours += (ev.horas || 0);
-            }
-
-            // 2. Cálculo Bosman (Mes actual)
-            if (parseInt(dateParts[1]) - 1 === currentMonth && parseInt(dateParts[0]) === currentYear) {
-                currentMonthHours += (ev.horas || 0);
-            }
-        });
-
-        if (currentMonthHours >= 48) {
-            isBosman = true;
-        }
-
-    } catch (e) {
-        console.error(`Error calculating stats for ${user.nombre}`, e);
-    }
-
-    // Si hay manualHours definido (y no es null), prevalece sobre el calculado acumulado
-    // PERO: La lógica de discrepancia sigue aplicando
-    const effectiveHours = (manualHours !== undefined && manualHours !== null) ? manualHours : accumulatedHours;
+    const manualHours = (user.stats?.manual_hours !== undefined && user.stats?.manual_hours !== null)
+        ? user.stats.manual_hours
+        : 0;
 
     return {
         ...user,
-        calculatedHours: accumulatedHours,
-        manualHours: manualHours,
-        effectiveHours: effectiveHours,
-        isBosman: isBosman,
-        discrepancy: (manualHours !== undefined && manualHours !== null && manualHours !== accumulatedHours)
+        effectiveHours: manualHours,
+        manualHours: manualHours
     };
 }
 
@@ -195,7 +158,6 @@ function generateTableHTML(title, list, canEdit, turno, listType) {
     `;
 
     let rows = list.map((u, index) => {
-        const discrepancyMark = u.discrepancy ? '<span style="color:#d32f2f; font-weight:bold; margin-left:5px;" title="Difiere del cálculo automático">*</span>' : '';
         const editButton = canEdit ? `<button onclick="editUserHours('${u.uid}', ${u.effectiveHours}, '${u.nombre}')" style="font-size:0.8em; margin-left:10px;">✏️</button>` : '';
 
         let footerInfo = '';
@@ -204,20 +166,11 @@ function generateTableHTML(title, list, canEdit, turno, listType) {
             footerInfo = `<div style="font-size: 0.75em; color: #666; margin-top: 2px;">Modificado por ${u.stats.last_modified_by} el ${date}</div>`;
         }
 
-        // Estilos
-        let rowStyle = 'background-color: white;';
-        let bosmanLabel = '';
-
-        if (u.isBosman) {
-            rowStyle = 'background-color: #ffcccc;';
-            bosmanLabel = ' <span style="font-weight:bold; color:black;">(Bosman)</span>';
-        }
-
         return `
-            <tr style="${rowStyle} border-bottom: 1px solid #eee;">
+            <tr style="background-color: white; border-bottom: 1px solid #eee;">
                 <td style="padding: 10px; text-align: center; font-weight: bold;">${index + 1}</td>
                 <td style="padding: 10px;">
-                    <div style="font-weight: bold; color: inherit;">${u.nombre} ${bosmanLabel} ${discrepancyMark}</div>
+                    <div style="font-weight: bold; color: inherit;">${u.nombre}</div>
                     <div style="font-size: 0.85em; color: #555;">${u.rango}</div>
                     ${footerInfo}
                 </td>
@@ -241,10 +194,108 @@ function generateTableHTML(title, list, canEdit, turno, listType) {
                 </tbody>
             </table>
         </div>
-        <div style="text-align: right; font-size: 0.8em; color: #666; margin-top: 5px; margin-bottom: 10px;">
-            * Asterisco indica discrepancia entre horas manuales y calendario.
+    `;
+}
+
+// --- CREAR USUARIO MANUAL ---
+
+function abrirCrearUsuario() {
+    const pass = prompt('Introduce la contraseña de administrador:');
+    if (pass === null) return; // Cancelado
+    if (pass !== 'admin080') {
+        alert('Contraseña incorrecta.');
+        return;
+    }
+
+    const turnoActual = document.getElementById('ranking-turno-select')?.value || 'T1';
+
+    const opcionesTurno = ['T1','T2','T3','T4','T5'].map(t =>
+        `<option value="${t}" ${t === turnoActual ? 'selected' : ''}>Turno ${t.replace('T','')}</option>`
+    ).join('');
+
+    const modalHTML = `
+        <div id="crear-usuario-modal"
+             onclick="if(event.target.id==='crear-usuario-modal') cerrarModalCrearUsuario()"
+             style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; display:flex; justify-content:center; align-items:center;">
+            <div style="background:white; padding:25px; border-radius:12px; width:90%; max-width:400px; box-shadow:0 10px 25px rgba(0,0,0,0.2); max-height:90vh; overflow-y:auto; position:relative;">
+
+                <button onclick="cerrarModalCrearUsuario()" style="position:absolute; top:12px; right:15px; background:none; border:none; font-size:1.4em; color:#666; cursor:pointer;">&times;</button>
+
+                <h3 style="margin-top:0; margin-bottom:20px; color:#AA1915;">Añadir Usuario</h3>
+
+                <label style="display:block; font-weight:bold; margin-bottom:4px; color:#555;">Nombre:</label>
+                <input type="text" id="crear-nombre" placeholder="Nombre y Apellidos"
+                       style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc; border-radius:6px; font-size:0.95em; box-sizing:border-box;">
+
+                <label style="display:block; font-weight:bold; margin-bottom:4px; color:#555;">Rango:</label>
+                <select id="crear-rango" style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc; border-radius:6px; font-size:0.95em; box-sizing:border-box;">
+                    <option value="Bombero">Bombero</option>
+                    <option value="Jefe de Dotación">Jefe de Dotación</option>
+                    <option value="Sargento">Sargento</option>
+                </select>
+
+                <label style="display:block; font-weight:bold; margin-bottom:4px; color:#555;">Turno:</label>
+                <select id="crear-turno" style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc; border-radius:6px; font-size:0.95em; box-sizing:border-box;">
+                    ${opcionesTurno}
+                </select>
+
+                <label style="display:block; font-weight:bold; margin-bottom:4px; color:#555;">Horas iniciales:</label>
+                <input type="number" id="crear-horas" value="0" min="0"
+                       style="width:100%; padding:10px; margin-bottom:20px; border:1px solid #ccc; border-radius:6px; font-size:0.95em; box-sizing:border-box;">
+
+                <div style="display:flex; gap:10px;">
+                    <button onclick="cerrarModalCrearUsuario()" style="flex:1; padding:12px; background:white; border:1px solid #ccc; border-radius:8px; cursor:pointer; color:#666;">Cancelar</button>
+                    <button onclick="crearUsuarioManual()" style="flex:1; padding:12px; background:#AA1915; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">CREAR</button>
+                </div>
+            </div>
         </div>
     `;
+
+    const div = document.createElement('div');
+    div.innerHTML = modalHTML;
+    document.body.appendChild(div.firstElementChild);
+}
+
+function cerrarModalCrearUsuario() {
+    const el = document.getElementById('crear-usuario-modal');
+    if (el) el.remove();
+}
+
+async function crearUsuarioManual() {
+    const nombre = document.getElementById('crear-nombre').value.trim();
+    const rango  = document.getElementById('crear-rango').value;
+    const turno  = document.getElementById('crear-turno').value;
+    const horas  = parseFloat(document.getElementById('crear-horas').value) || 0;
+
+    if (!nombre) {
+        alert('Introduce un nombre.');
+        return;
+    }
+
+    try {
+        await db.collection('users').add({
+            nombre: nombre,
+            rango:  rango,
+            turno:  turno,
+            manual_entry: true, // Indica que fue creado manualmente (sin cuenta de acceso)
+            stats: {
+                manual_hours:  horas,
+                ranking_order: 9999
+            },
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        cerrarModalCrearUsuario();
+        alert(`Usuario "${nombre}" creado correctamente.`);
+
+        // Recargar la tabla del turno seleccionado
+        const select = document.getElementById('ranking-turno-select');
+        if (select) renderTurnoTables(select.value);
+
+    } catch (e) {
+        console.error(e);
+        alert('Error al crear usuario: ' + e.message);
+    }
 }
 
 // --- RESET LIST ---
@@ -268,10 +319,10 @@ async function resetList(turno, listType) {
         // Filtrar por lista
         let targetList = [];
         if (listType === 'bomberos') {
-            targetList = usersWithStats.filter(u => u.rango === 'Bombero' || u.rango === 'Bombero-Conductor');
+            targetList = usersWithStats.filter(u => u.rango === 'Bombero');
         } else {
             // Mandos (incluyendo Sargentos en la data, aunque no se muestren a veces)
-            targetList = usersWithStats.filter(u => u.rango !== 'Bombero' && u.rango !== 'Bombero-Conductor');
+            targetList = usersWithStats.filter(u => u.rango !== 'Bombero');
         }
 
         // Ordenar actual (Hours ASC, Order ASC)
@@ -289,10 +340,8 @@ async function resetList(turno, listType) {
         targetList.forEach((u, index) => {
             const ref = db.collection('users').doc(u.uid);
             batch.update(ref, {
-                'stats.accumulated_hours': 0, // Visual mostly
-                'stats.last_reset_date': now, // Critical for logic
-                'stats.ranking_order': index, // Save current position
-                'stats.manual_hours': null, // Reset manual override
+                'stats.ranking_order': index, // Guardar posición actual como referencia
+                'stats.manual_hours': 0,      // Poner horas a 0
                 'stats.last_modified_by': currentUser.email + ' (RESET)',
                 'stats.last_modified_date': now
             });

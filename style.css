@@ -464,18 +464,22 @@ a {
 
 /* Contenedor del mapa My Maps */
 #map {
+    position: fixed;
+    /* O fixed si quieres que no se mueva nada */
+    top: var(--header-h);
+    left: 0;
     width: 100vw;
-    /* Ancho total de la ventana */
-    height: calc(100vh - 60px - env(safe-area-inset-top));
-    /* Altura total menos el header real */
-    margin-top: -20px;
-    /* Compensa el padding superior de #app-content */
-    margin-left: -20px;
-    /* Compensa el padding izquierdo de #app-content */
-    position: relative;
-    z-index: 1;
+    height: calc(100vh - var(--header-h));
+    z-index: 99;
+    /* Por debajo del header pero encima de todo lo demás */
+    background: white;
+    touch-action: auto !important;
+    /* PERMITE EL ZOOM NATIVO */
+}
 
-    /* touch-action: none Eliminado a petición para restaurar comportamiento antiguo */
+/* Forzamos que Leaflet ignore cualquier transformación del body */
+.leaflet-container {
+    transform: none !important;
 }
 
 .leaflet-control-layers {
