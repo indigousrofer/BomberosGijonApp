@@ -496,6 +496,79 @@ a {
     cursor: pointer;
 }
 
+/* ── MARCADOR DE UBICACIÓN PROPIA (estilo Google Maps) ── */
+.my-location-dot {
+    position: relative;
+    width: 20px;
+    height: 20px;
+}
+
+/* Punto azul central */
+.my-location-dot::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    background: #4285F4;
+    border: 2.5px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(66, 133, 244, 0.5);
+    z-index: 2;
+}
+
+/* Pulso exterior */
+.my-location-dot::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    background: rgba(66, 133, 244, 0.3);
+    border-radius: 50%;
+    animation: location-pulse 2s ease-out infinite;
+    z-index: 1;
+}
+
+@keyframes location-pulse {
+    0%   { width: 14px; height: 14px; opacity: 0.8; }
+    100% { width: 48px; height: 48px; opacity: 0; }
+}
+
+/* ── BOTÓN "LOCALÍZAME" ── */
+.locate-me-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: white;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.35);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.locate-me-btn:active {
+    background: #f0f0f0;
+}
+
+.locate-me-btn svg {
+    width: 22px;
+    height: 22px;
+    fill: #555;
+    transition: fill 0.2s;
+}
+
+.locate-me-btn.active svg {
+    fill: #4285F4;
+}
+
 /* Reglas visuales para el calendario */
 /* --- Añadir/Sustituir estas reglas limpias al final --- */
 

@@ -14,6 +14,7 @@ let turnoSeleccionadoCal = 'T2';
 let __updateBannerShown = false;
 let __updatesInitDone = false;
 let __prevBodyOverflow = '';
+let __leafletMap = null; // Instancia global del mapa Leaflet para poder destruirla al reinicializar
 let __prevMainOverflow = '';
 
 const appContent = document.getElementById('app-content');
@@ -216,12 +217,18 @@ function getPdfDownloadHrefAndAttrs(doc) {
 // --- FUNCIÓN RENDER del mapa ---
 // --- NIVEL 1: SECCIÓN DE MAPA (ACTUALIZADA) ---
 async function renderMapaSection(isBack = false) { // <--- Añadir isBack
-  // 1. Preparamos el contenedor. 
+  // 1. Preparamos el contenedor.
   // Lo ponemos en el main-scroll pero FUERA del zoom-layer
   let mapDiv = document.getElementById('map');
   if (!mapDiv) {
     mapDiv = document.createElement('div');
     mapDiv.id = 'map';
+  }
+
+  // Destruir instancia previa de Leaflet para evitar "Map container is already initialized"
+  if (__leafletMap) {
+    try { __leafletMap.remove(); } catch(e) { console.warn('Error al destruir mapa previo:', e); }
+    __leafletMap = null;
   }
 
   // Movemos el div fuera de la capa de zoom para que no herede escalas
@@ -231,16 +238,30 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
   zoomLayer.style.display = 'none';
   mapDiv.style.display = 'block';
 
-  // Renderizamos el título (esto va al header, no afecta al mapa)
-  updateHeaderTitle('Mapa de Elementos');
+  // Actualizamos el header y el historial de navegación manualmente
+  // (renderMapaSection no llama a render() porque el mapa vive fuera del zoom-layer)
+  document.querySelector('header h1').textContent = 'Mapa de Elementos';
+  const actionIcon = document.getElementById('header-action-icon');
+  const logoImg = document.getElementById('header-logo-img');
+  if (actionIcon) { actionIcon.style.display = 'block'; actionIcon.classList.add('header-logo-active'); }
+  if (logoImg) logoImg.src = 'images/home-icon.png';
+  if (backButton) backButton.style.display = 'inline';
+  mainScroll.style.touchAction = 'auto'; // Deja que Leaflet gestione los toques
+  if (!isBack) {
+    navigationHistory.push({ level: 1, section: 'mapa' });
+    const idx = navigationHistory.length - 1;
+    if (idx === 0) history.replaceState({ stateIndex: 0 }, 'Mapa de Elementos');
+    else history.pushState({ stateIndex: idx }, 'Mapa de Elementos');
+  }
 
   setTimeout(() => {
     // Inicializar Leaflet con soporte táctil total
-    const map = L.map('map', {
+    __leafletMap = L.map('map', {
       touchZoom: true,
       tap: false,
       zoomControl: true
     }).setView([43.5322, -5.6611], 14);
+    const map = __leafletMap;
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap'
@@ -377,7 +398,110 @@ async function renderMapaSection(isBack = false) { // <--- Añadir isBack
       }
     });
 
+    // ── MI UBICACIÓN (estilo Google Maps) ──────────────────────────────
+    let __geoWatchId = null;
+    let __myMarker = null;
+    let __myAccCircle = null;
+    let __firstFix = true;
 
+    // Icono personalizado: punto azul con pulso
+    const myLocIcon = L.divIcon({
+      className: '',
+      html: '<div class="my-location-dot"></div>',
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+      popupAnchor: [0, -12]
+    });
+
+    function actualizarMiUbicacion(pos) {
+      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+      const latlng = [lat, lng];
+
+      // Crear o mover el marcador
+      if (!__myMarker) {
+        __myMarker = L.marker(latlng, { icon: myLocIcon, zIndexOffset: 20000 })
+          .bindPopup('<b>Mi ubicación</b>')
+          .addTo(map);
+      } else {
+        __myMarker.setLatLng(latlng);
+      }
+
+      // Crear o actualizar el círculo de precisión
+      if (!__myAccCircle) {
+        __myAccCircle = L.circle(latlng, {
+          radius: accuracy,
+          color: '#4285F4',
+          fillColor: '#4285F4',
+          fillOpacity: 0.10,
+          weight: 1.5,
+          opacity: 0.4
+        }).addTo(map);
+      } else {
+        __myAccCircle.setLatLng(latlng).setRadius(accuracy);
+      }
+
+      // La primera vez centramos el mapa en nuestra posición
+      if (__firstFix) {
+        __firstFix = false;
+        map.setView(latlng, Math.max(map.getZoom(), 16));
+      }
+    }
+
+    function errorUbicacion(err) {
+      console.warn('Error de geolocalización:', err.message);
+    }
+
+    function iniciarLocalizacion(btn) {
+      if (!('geolocation' in navigator)) {
+        alert('Tu dispositivo no tiene soporte de geolocalización.');
+        return;
+      }
+      if (__geoWatchId !== null) {
+        // Ya está activo → parar
+        navigator.geolocation.clearWatch(__geoWatchId);
+        __geoWatchId = null;
+        if (__myMarker) { __myMarker.remove(); __myMarker = null; }
+        if (__myAccCircle) { __myAccCircle.remove(); __myAccCircle = null; }
+        __firstFix = true;
+        btn.classList.remove('active');
+        return;
+      }
+      // Iniciar seguimiento
+      btn.classList.add('active');
+      __geoWatchId = navigator.geolocation.watchPosition(
+        actualizarMiUbicacion,
+        errorUbicacion,
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+      );
+      // Primera lectura rápida para centrar el mapa de inmediato
+      navigator.geolocation.getCurrentPosition(actualizarMiUbicacion, errorUbicacion, { enableHighAccuracy: true });
+    }
+
+    // Control de Leaflet personalizado con el botón de localización
+    const LocateControl = L.Control.extend({
+      options: { position: 'bottomright' },
+      onAdd() {
+        const btn = L.DomUtil.create('button', 'locate-me-btn');
+        btn.title = 'Mi ubicación';
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+          </svg>`;
+        L.DomEvent.on(btn, 'click', L.DomEvent.stopPropagation);
+        L.DomEvent.on(btn, 'click', () => iniciarLocalizacion(btn));
+        return btn;
+      }
+    });
+    new LocateControl().addTo(map);
+
+    // Limpiar geolocalización cuando el mapa se destruya
+    map.on('unload', () => {
+      if (__geoWatchId !== null) {
+        navigator.geolocation.clearWatch(__geoWatchId);
+        __geoWatchId = null;
+      }
+    });
+    // ──────────────────────────────────────────────────────────────────
 
   }, 100);
 }
