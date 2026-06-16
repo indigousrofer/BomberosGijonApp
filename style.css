@@ -1266,3 +1266,151 @@ button {
     -webkit-touch-callout: none;
     user-select: none;
 }
+
+/* ── BOTÓN "AÑADIR MATERIAL" (solo admins) ── */
+.admin-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #AA1915;
+    color: white;
+    border: none;
+    border-radius: 24px;
+    padding: 11px 22px;
+    font-size: 0.95em;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(170, 25, 21, 0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+    font-family: inherit;
+}
+
+.admin-add-btn:active {
+    transform: scale(0.96);
+    box-shadow: 0 1px 5px rgba(170, 25, 21, 0.25);
+}
+
+/* ── OVERLAY DEL MODAL DE NUEVO MATERIAL ── */
+#nuevo-material-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 20000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+/* ── HOJA QUE SUBE DESDE ABAJO ── */
+.nm-sheet {
+    background: white;
+    width: 100%;
+    max-width: 520px;
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px 36px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: nm-slide-up 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
+}
+
+@keyframes nm-slide-up {
+    from { transform: translateY(80px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── CAMPOS DEL FORMULARIO ── */
+.nm-field {
+    margin-bottom: 13px;
+}
+
+.nm-label {
+    display: block;
+    font-size: 0.75em;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 5px;
+}
+
+.nm-input,
+.nm-textarea,
+.nm-select {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 9px;
+    font-size: 0.95em;
+    color: #333;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+    font-family: inherit;
+    background: white;
+}
+
+.nm-input:focus,
+.nm-textarea:focus,
+.nm-select:focus {
+    border-color: #AA1915;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(170, 25, 21, 0.08);
+}
+
+.nm-textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* ── SEPARADORES DE SECCIÓN DEL MODAL ── */
+.nm-section-divider {
+    margin: 20px 0 12px;
+    font-weight: 700;
+    color: #AA1915;
+    font-size: 0.88em;
+    border-bottom: 1.5px solid #f0f0f0;
+    padding-bottom: 7px;
+    letter-spacing: 0.3px;
+}
+
+/* ── BOTONES DEL MODAL ── */
+.nm-btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.nm-btn-save {
+    flex: 1;
+    background: #AA1915;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 1em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    font-family: inherit;
+}
+
+.nm-btn-save:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.nm-btn-cancel {
+    background: none;
+    border: 1.5px solid #ddd;
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 1em;
+    color: #666;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+}
+
+.nm-btn-cancel:active {
+    background: #f5f5f5;
+}

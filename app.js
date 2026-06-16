@@ -1295,7 +1295,196 @@ function showArmarioMaterial(vehicleId, viewId, hotspotIndex, isBack = false) {
     contentHTML += `<div style="text-align:center; padding:20px;"><p>Armario vacío.</p></div>`;
   }
 
+  // Botón añadir material (solo admins)
+  if (esAdmin()) {
+    const hasSections = hotspot.sections && hotspot.sections.length > 0;
+    contentHTML += `
+      <div style="padding: 20px 0 8px; text-align: center;">
+        <button class="admin-add-btn"
+                onclick="abrirModalNuevoMaterial('${vehicleId}','${viewId}',${hotspotIndex})">
+          ＋ Añadir material
+        </button>
+      </div>`;
+  }
+
   render(contentHTML, hotspot.name, { level: 4, vehicleId, viewId, hotspotIndex }, isBack);
+}
+
+// ----------------------------------------------------
+// MODAL: AÑADIR NUEVO MATERIAL AL ARMARIO (solo admins)
+// ----------------------------------------------------
+function abrirModalNuevoMaterial(vehicleId, viewId, hotspotIndex) {
+  if (!esAdmin()) return;
+
+  const detail = FIREBASE_DATA.DETAILS[vehicleId];
+  const hotspot = detail.hotspots[viewId][hotspotIndex];
+  const hasSections = hotspot.sections && hotspot.sections.length > 0;
+
+  const sectionSelectorHTML = hasSections
+    ? `<div class="nm-field">
+         <label class="nm-label">Añadir a la sección</label>
+         <select id="nm-section" class="nm-select">
+           ${hotspot.sections.map((s, i) => `<option value="${i}">${s.name}</option>`).join('')}
+         </select>
+       </div>`
+    : '';
+
+  const modalHTML = `
+    <div id="nuevo-material-modal"
+         onclick="if(event.target.id==='nuevo-material-modal') cerrarModalNuevoMaterial()">
+      <div class="nm-sheet">
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+          <h3 style="margin:0; color:#AA1915; font-size:1.15em;">Nuevo material</h3>
+          <button onclick="cerrarModalNuevoMaterial()"
+                  style="background:none; border:none; font-size:1.6em; color:#999; cursor:pointer; line-height:1;">✕</button>
+        </div>
+
+        <!-- Nombre y cantidad -->
+        <div class="nm-field">
+          <label class="nm-label">Nombre del material *</label>
+          <input id="nm-nombre" class="nm-input" type="text" placeholder="Ej: Extintor polvo 6kg">
+        </div>
+        <div class="nm-field">
+          <label class="nm-label">Cantidad</label>
+          <input id="nm-qty" class="nm-input" type="number" min="1" value="1">
+        </div>
+
+        ${sectionSelectorHTML}
+
+        <!-- Descripción -->
+        <div class="nm-field">
+          <label class="nm-label">Descripción (opcional)</label>
+          <textarea id="nm-desc" class="nm-textarea" placeholder="Características, ubicación, notas..."></textarea>
+        </div>
+
+        <!-- Fotografía -->
+        <div class="nm-section-divider">📷 Fotografía (opcional)</div>
+        <div class="nm-field">
+          <label class="nm-label">URL de la imagen</label>
+          <input id="nm-photo-url" class="nm-input" type="url" placeholder="https://...">
+        </div>
+        <div class="nm-field">
+          <label class="nm-label">Nombre descriptivo de la foto</label>
+          <input id="nm-photo-name" class="nm-input" type="text" placeholder="Foto del extintor">
+        </div>
+
+        <!-- PDF -->
+        <div class="nm-section-divider">📄 Documento PDF (opcional)</div>
+        <div class="nm-field">
+          <label class="nm-label">URL del PDF (visor)</label>
+          <input id="nm-pdf-url" class="nm-input" type="url" placeholder="https://...">
+        </div>
+        <div class="nm-field">
+          <label class="nm-label">Nombre del documento</label>
+          <input id="nm-pdf-name" class="nm-input" type="text" placeholder="Manual de uso">
+        </div>
+        <div class="nm-field">
+          <label class="nm-label">URL de descarga directa (para iOS, opcional)</label>
+          <input id="nm-pdf-download" class="nm-input" type="url" placeholder="https://drive.google.com/...">
+        </div>
+
+        <!-- Estado y botones -->
+        <p id="nm-status" style="color:red; font-size:0.9em; min-height:1.2em; margin:4px 0;"></p>
+        <div class="nm-btn-row">
+          <button class="nm-btn-cancel" onclick="cerrarModalNuevoMaterial()">Cancelar</button>
+          <button class="nm-btn-save"
+                  onclick="guardarNuevoMaterial('${vehicleId}','${viewId}',${hotspotIndex})">
+            GUARDAR
+          </button>
+        </div>
+
+      </div>
+    </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  // Foco en el primer campo
+  setTimeout(() => document.getElementById('nm-nombre')?.focus(), 50);
+}
+
+function cerrarModalNuevoMaterial() {
+  const modal = document.getElementById('nuevo-material-modal');
+  if (modal) modal.remove();
+}
+
+async function guardarNuevoMaterial(vehicleId, viewId, hotspotIndex) {
+  const statusEl = document.getElementById('nm-status');
+  const saveBtn = document.querySelector('.nm-btn-save');
+
+  const nombre    = document.getElementById('nm-nombre').value.trim();
+  const qty       = Math.max(1, parseInt(document.getElementById('nm-qty').value) || 1);
+  const desc      = document.getElementById('nm-desc').value.trim();
+  const photoUrl  = document.getElementById('nm-photo-url').value.trim();
+  const photoName = document.getElementById('nm-photo-name').value.trim();
+  const pdfUrl    = document.getElementById('nm-pdf-url').value.trim();
+  const pdfName   = document.getElementById('nm-pdf-name').value.trim();
+  const pdfDl     = document.getElementById('nm-pdf-download').value.trim();
+
+  // Validación
+  if (!nombre) {
+    statusEl.textContent = 'El nombre es obligatorio.';
+    document.getElementById('nm-nombre').focus();
+    return;
+  }
+
+  // Construir array de docs
+  const docs = [];
+  if (photoUrl) {
+    docs.push({ url: photoUrl, name: photoName || nombre, type: 'photo' });
+  }
+  if (pdfUrl) {
+    const pdfEntry = { url: pdfUrl, name: pdfName || 'Documento', type: 'pdf' };
+    if (pdfDl) pdfEntry.url_download = pdfDl;
+    docs.push(pdfEntry);
+  }
+
+  // UI: estado de carga
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Guardando...'; }
+  statusEl.style.color = '#888';
+  statusEl.textContent = 'Guardando en Firebase...';
+
+  try {
+    // 1. Crear el material en la colección 'materials'
+    const newRef = await db.collection('materials').add({
+      name: nombre,
+      description: desc,
+      docs: docs,
+      is_kit: false
+    });
+    const newId = newRef.id;
+
+    // 2. Actualizar la caché local de FIREBASE_DATA
+    FIREBASE_DATA.MATERIALS[newId] = { name: nombre, description: desc, docs, is_kit: false };
+
+    // 3. Añadir el nuevo item al hotspot en memoria
+    const detail  = FIREBASE_DATA.DETAILS[vehicleId];
+    const hotspot = detail.hotspots[viewId][hotspotIndex];
+    const hasSections = hotspot.sections && hotspot.sections.length > 0;
+
+    if (hasSections) {
+      const secIdx = parseInt(document.getElementById('nm-section')?.value) || 0;
+      if (!hotspot.sections[secIdx].items) hotspot.sections[secIdx].items = [];
+      hotspot.sections[secIdx].items.push({ id: newId, qty });
+    } else {
+      if (!hotspot.inventory) hotspot.inventory = [];
+      hotspot.inventory.push({ id: newId, qty });
+    }
+
+    // 4. Escribir los hotspots actualizados en Firestore (campo completo)
+    await db.collection('details').doc(vehicleId).update({
+      hotspots: detail.hotspots
+    });
+
+    // 5. Cerrar modal y re-renderizar la vista
+    cerrarModalNuevoMaterial();
+    showArmarioMaterial(vehicleId, viewId, hotspotIndex, true); // isBack=true → no añade historial extra
+
+  } catch (err) {
+    console.error('Error al guardar material:', err);
+    statusEl.style.color = 'red';
+    statusEl.textContent = 'Error: ' + err.message;
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'GUARDAR'; }
+  }
 }
 
 // --- NIVEL 4 bis: Muestra una lista de material dentro de una caja, saca u otro contenedor ---
